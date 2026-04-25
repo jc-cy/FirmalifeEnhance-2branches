@@ -1,0 +1,61 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "firmalife_greenhouse_patch"
+version = "${file.jarVersion}"
+displayName = "FirmalifeEnhance"
+authors = "交错次元"
+description = '''独立的 TFC + Firmalife 兼容补丁。
+提供温室与地窖的气象站控温、常见容器地窖兼容，以及温室建材拆解配方,本版本额外新增大量的配置项目,新增了混合温室地窖的功能，允许自定义温室地窖墙壁等.
+新增对tfe的兼容.
+
+Chinese Notice
+本模组采用 ARR 协议。仅允许作者未修改发布版免费用于个人、非商业、合法的正常游戏使用。
+未经作者事先书面许可，禁止二次分发、整合打包、修改后二次发布、商业使用或 AI 训练。
+完整条款见随附 LICENSE 与 DISCLAIMER。
+以上限制是防止不怀好意的人，如无恶意可以放宽全部限制。
+
+Standalone TFC + Firmalife compatibility patch.
+This version provides temperature control for greenhouses and cellars, compatibility with common container cellars, as well as the disassembly formula for greenhouse building materials. It also adds a large number of configuration items, and introduces the function of mixed greenhouses and cellars, allowing for customization of greenhouse cellar walls, etc.
+Added compatibility for TFE.
+
+English Notice
+Distributed under ARR.
+No redistribution, repacks, modified re-releases, commercial use, or AI training without prior written permission.
+See LICENSE and DISCLAIMER for the full terms.
+The above restrictions are in place to prevent malicious individuals. If there is no ill intent, all the restrictions can be relaxed.
+'''
+
+
+[[dependencies.firmalife_greenhouse_patch]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.firmalife_greenhouse_patch]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.21)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.firmalife_greenhouse_patch]]
+modId = "tfc"
+mandatory = true
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.firmalife_greenhouse_patch]]
+modId = "firmalife"
+mandatory = true
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[mixins]]
+config = "firmalife_greenhouse_patch.mixins.json"

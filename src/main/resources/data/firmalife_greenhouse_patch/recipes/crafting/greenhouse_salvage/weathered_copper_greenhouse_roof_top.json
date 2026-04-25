@@ -1,0 +1,15 @@
+﻿{
+    "type":  "firmalife_greenhouse_patch:greenhouse_salvage",
+    "ingredient":  {
+                       "item":  "firmalife:weathered_copper_greenhouse_roof_top"
+                   },
+    "input_count":  8,
+    "result":  {
+                   "count":  3,
+                   "id":  "tfc:metal/rod/copper"
+               },
+    "extra_result":  {
+                         "count":  3,
+                         "id":  "minecraft:glass"
+                     }
+}
