@@ -35,7 +35,7 @@ val forgeConfigScreensLocalJars = fileTree(configuredModsDir) {
 }
 
 val modId = "firmalife_greenhouse_patch"
-val modVersion = System.getenv("VERSION") ?: "0.1.3-1.20.1"
+val modVersion = System.getenv("VERSION") ?: "0.1.3"
 
 group = "com.g1739.firmalifegreenhousepatch"
 version = modVersion
