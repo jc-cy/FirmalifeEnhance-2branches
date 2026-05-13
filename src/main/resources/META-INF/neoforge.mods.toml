@@ -1,0 +1,63 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "firmalife_greenhouse_patch"
+version = "${file.jarVersion}"
+displayName = "温室地窖重置-Firmalife Enhance"
+authors = "交错次元"
+description = '''独立的 TFC + Firmalife 兼容补丁。
+提供气象站对温室地窖温控、地窖里箱子和大缸兼容与温室建材拆解配方，可以回收低级温室,详情可直接查看气象站。
+
+中文声明
+本模组采用 ARR 协议。
+仅允许作者未修改发布版免费用于个人、非商业、合法正常的游戏使用。
+未经作者事先书面许可，禁止二次分发、整合打包、修改后二次发布、商业使用或 AI 训练。
+源码默认不公开；在同意随附声明并取得作者明确同意后，可向作者申请获取部分或全部源码。
+本模组包含 AI 生成或 AI 辅助内容；如不接受，请立即禁用或删除本模组。
+完整条款详见随附 LICENSE 与 DISCLAIMER。
+本声明及后续协议仅限制别有用心的人和反对AI编程并带节奏的人群，如无恶意，可以放宽全部要求并提供源码.
+
+Standalone TFC + Firmalife compatibility patch.
+Adds climate-station temperature control for greenhouses and cellars, cellar compatibility for chests and large vessels, and greenhouse material salvage recipes. Lower-tier greenhouse materials can be recovered; see the climate station for details.
+
+English Notice
+This mod is distributed under ARR.
+Only the author's unmodified release may be used for free for personal, non-commercial, lawful, ordinary gameplay.
+No redistribution, repacks, modified re-releases, commercial use, or AI training without the author's prior written permission.
+Source code is not public by default; if you agree to the bundled terms and obtain the author's explicit consent, you may request access to some or all of the source code.
+This mod contains AI-generated or AI-assisted content; disable or remove it if you do not want such content.
+See the bundled LICENSE and DISCLAIMER for the full terms.
+This notice and the follow-up terms are mainly intended to restrict bad-faith actors and people who oppose AI programming while deliberately stirring up trouble; if there is no malicious intent, the author may relax all requirements and provide source code.'''
+
+[[dependencies.firmalife_greenhouse_patch]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.firmalife_greenhouse_patch]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.firmalife_greenhouse_patch]]
+modId = "tfc"
+type = "required"
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.firmalife_greenhouse_patch]]
+modId = "firmalife"
+type = "required"
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[mixins]]
+config = "firmalife_greenhouse_patch.mixins.json"

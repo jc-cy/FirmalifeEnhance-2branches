@@ -1,0 +1,15 @@
+﻿{
+    "type":  "firmalife_greenhouse_patch:greenhouse_salvage",
+    "ingredient":  {
+                       "item":  "firmalife:oxidized_copper_greenhouse_panel_roof"
+                   },
+    "input_count":  4,
+    "result":  {
+                   "count":  3,
+                   "id":  "tfc:metal/rod/copper"
+               },
+    "extra_result":  {
+                         "count":  3,
+                         "id":  "firmalife:reinforced_glass"
+                     }
+}

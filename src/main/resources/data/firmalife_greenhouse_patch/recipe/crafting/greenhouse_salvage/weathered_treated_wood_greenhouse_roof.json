@@ -1,0 +1,15 @@
+﻿{
+    "type":  "firmalife_greenhouse_patch:greenhouse_salvage",
+    "ingredient":  {
+                       "item":  "firmalife:weathered_treated_wood_greenhouse_roof"
+                   },
+    "input_count":  4,
+    "result":  {
+                   "count":  3,
+                   "id":  "firmalife:treated_lumber"
+               },
+    "extra_result":  {
+                         "count":  3,
+                         "id":  "minecraft:glass"
+                     }
+}

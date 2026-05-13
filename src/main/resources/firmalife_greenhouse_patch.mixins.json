@@ -1,0 +1,41 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.g1739.firmalifegreenhousepatch.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "firmalife_greenhouse_patch.refmap.json",
+  "mixins": [
+    "AbstractContainerMenuMixin",
+    "BaseBeehiveBlockMixin",
+    "BananaPlantBlockMixin",
+    "CallbackSlotMixin",
+    "ClimateStationBlockEntityMixin",
+    "ClimateStationBlockMixin",
+    "ContainerMixin",
+    "CropHelpersMixin",
+    "FarmlandBlockMixin",
+    "FLBeehiveBlockEntityMixin",
+    "FLGrowingFruitTreeBranchBlockMixin",
+    "FoodShelfBlockEntityMixin",
+    "FruitTreeBranchBlockMixin",
+    "FruitTreeSaplingBlockMixin",
+    "GrapePlantBlockEntityMixin",
+    "GrowingFruitTreeBranchBlockMixin",
+    "HangerBlockEntityMixin",
+    "InventoryBlockEntityMixin",
+    "MechanicsMixin",
+    "ResultSlotMixin",
+    "SeasonalPlantBlockAccessor",
+    "SeasonalPlantBlockMixin",
+    "SlotMixin",
+    "StationaryBerryBushBlockMixin",
+    "TFCBlockEntityMixin",
+    "TFCChestBlockEntityMixin",
+    "TFCChestBlockMixin",
+    "WaterloggedBerryBushBlockMixin",
+    "WildBeehiveBlockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
