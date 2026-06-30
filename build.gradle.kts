@@ -33,9 +33,12 @@ val configuredLocalJars = fileTree(configuredModsDir) {
 val forgeConfigScreensLocalJars = fileTree(configuredModsDir) {
     include("ForgeConfigScreens-v*-1.20.1-Forge.jar")
 }
+val immersiveEngineeringLocalJars = fileTree(configuredModsDir) {
+    include("ImmersiveEngineering-1.20.1-*.jar")
+}
 
 val modId = "firmalife_greenhouse_patch"
-val modVersion = System.getenv("VERSION") ?: "0.1.3"
+val modVersion = System.getenv("VERSION") ?: "0.1.4"
 
 group = "com.g1739.firmalifegreenhousepatch"
 version = modVersion
@@ -87,6 +90,9 @@ dependencies {
     }
     if (forgeConfigScreensLocalJars.files.isNotEmpty()) {
         compileOnly(files(forgeConfigScreensLocalJars))
+    }
+    if (immersiveEngineeringLocalJars.files.isNotEmpty()) {
+        compileOnly(files(immersiveEngineeringLocalJars))
     }
 
     compileOnly(fg.deobf("mezz.jei:jei-$minecraftVersion-common-api:$jeiVersion"))

@@ -2,6 +2,7 @@ package com.g1739.firmalifegreenhousepatch.common;
 
 import com.g1739.firmalifegreenhousepatch.FirmalifeGreenhousePatch;
 import com.g1739.firmalifegreenhousepatch.common.config.PatchConfig;
+import com.g1739.firmalifegreenhousepatch.common.temperature.GreenhouseTemperatureHelper;
 import java.util.ArrayList;
 import java.util.List;
 import net.dries007.tfc.common.capabilities.food.FoodTrait;
@@ -75,6 +76,19 @@ public final class ModFoodTraits
     {
         ensureInitialized();
         return getCellarTrait(cellarTraits.size() - 1);
+    }
+
+    public static boolean isPatchCellarTrait(FoodTrait trait)
+    {
+        ensureInitialized();
+        return cellarTraits.contains(trait);
+    }
+
+    public static String getCellarTraitMultiplierText(FoodTrait trait)
+    {
+        final float decayModifier = trait.getDecayModifier();
+        final float multiplier = decayModifier <= 0f ? Float.POSITIVE_INFINITY : 1f / decayModifier;
+        return GreenhouseTemperatureHelper.formatFactor(multiplier);
     }
 
     private static void ensureInitialized()

@@ -13,6 +13,7 @@ public final class FirmalifeGreenhousePatchMixinPlugin implements IMixinConfigPl
     private static final String TFE_MOD_ID = "tfe";
     private static final String CONFIGURED_MOD_ID = "configured";
     private static final String FORGE_CONFIG_SCREENS_MOD_ID = "forgeconfigscreens";
+    private static final String IE_MOD_ID = "immersiveengineering";
     private static final Set<String> ORIGINAL_ONLY_MIXINS = Set.of(
         "com.g1739.firmalifegreenhousepatch.mixin.BananaPlantBlockMixin",
         "com.g1739.firmalifegreenhousepatch.mixin.FruitTreeBranchBlockMixin",
@@ -33,10 +34,14 @@ public final class FirmalifeGreenhousePatchMixinPlugin implements IMixinConfigPl
         "com.g1739.firmalifegreenhousepatch.mixin.ForgeConfigScreensConfigEntryMixin",
         "com.g1739.firmalifegreenhousepatch.mixin.ForgeConfigScreensEntryDataMixin"
     );
+    private static final Set<String> IE_ONLY_MIXINS = Set.of(
+        "com.g1739.firmalifegreenhousepatch.mixin.ImmersiveEngineeringCrateBlockEntityMixin"
+    );
 
     private static Boolean tfeLoaded;
     private static Boolean configuredLoaded;
     private static Boolean forgeConfigScreensLoaded;
+    private static Boolean immersiveEngineeringLoaded;
 
     @Override
     public void onLoad(String mixinPackage)
@@ -67,6 +72,10 @@ public final class FirmalifeGreenhousePatchMixinPlugin implements IMixinConfigPl
         if (FORGE_CONFIG_SCREENS_ONLY_MIXINS.contains(mixinClassName))
         {
             return isForgeConfigScreensLoaded();
+        }
+        if (IE_ONLY_MIXINS.contains(mixinClassName))
+        {
+            return isImmersiveEngineeringLoaded();
         }
         return true;
     }
@@ -117,6 +126,15 @@ public final class FirmalifeGreenhousePatchMixinPlugin implements IMixinConfigPl
             forgeConfigScreensLoaded = isModLoaded(FORGE_CONFIG_SCREENS_MOD_ID);
         }
         return forgeConfigScreensLoaded;
+    }
+
+    private static boolean isImmersiveEngineeringLoaded()
+    {
+        if (immersiveEngineeringLoaded == null)
+        {
+            immersiveEngineeringLoaded = isModLoaded(IE_MOD_ID);
+        }
+        return immersiveEngineeringLoaded;
     }
 
     private static boolean isModLoaded(String modId)

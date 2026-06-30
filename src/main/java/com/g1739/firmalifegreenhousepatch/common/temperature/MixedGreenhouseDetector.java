@@ -191,7 +191,7 @@ public final class MixedGreenhouseDetector
             }
 
             return new Result(
-                Set.copyOf(positions),
+                new java.util.HashSet<>(positions),
                 tier,
                 new GreenhouseStructureData(displayNameKey, controlBonus, shellBlocks.size(), thermalBlocks.size(), mixed),
                 representativeType

@@ -14,6 +14,7 @@ import com.g1739.firmalifegreenhousepatch.common.temperature.ConfiguredCellarDet
 import com.g1739.firmalifegreenhousepatch.common.temperature.GreenhouseTemperatureHelper;
 import com.g1739.firmalifegreenhousepatch.common.temperature.MixedGreenhouseDetector;
 import com.mojang.datafixers.util.Either;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.dries007.tfc.util.Helpers;
@@ -200,7 +201,7 @@ public abstract class ClimateStationBlockMixin
                 {
                     station.setFavorite(greenhouse.representativeType());
                 }
-                station.setPositions(greenhouse.positions());
+                station.setPositions(new HashSet<>(greenhouse.positions()));
                 station.updateValidity(true, greenhouse.tier());
                 station.setType(ClimateType.GREENHOUSE);
             }
@@ -217,7 +218,7 @@ public abstract class ClimateStationBlockMixin
                 {
                     access.flgp$setGreenhouseStructureData(null);
                 }
-                station.setPositions(cellarPositions);
+                station.setPositions(new HashSet<>(cellarPositions));
                 station.updateValidity(true, 0);
                 station.setType(ClimateType.CELLAR);
             }

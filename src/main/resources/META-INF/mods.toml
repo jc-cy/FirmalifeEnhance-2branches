@@ -8,8 +8,9 @@ version = "${file.jarVersion}"
 displayName = "FirmalifeEnhance"
 authors = "交错次元"
 description = '''独立的 TFC + Firmalife 兼容补丁。
-提供温室与地窖的气象站控温、常见容器地窖兼容，以及温室建材拆解配方,本版本额外新增大量的配置项目,新增了混合温室地窖的功能，允许自定义温室地窖墙壁等.
-新增对tfe的兼容.
+提供温室与地窖的气象站控温、常见容器与 IE 木制储物箱 / 强化储物箱地窖兼容，以及温室建材拆解配方。
+本版本额外新增大量配置项目，新增混合温室 / 地窖功能，允许自定义温室与地窖墙壁等。
+新增对 TFE 的兼容。
 
 Chinese Notice
 本模组采用 ARR 协议。仅允许作者未修改发布版免费用于个人、非商业、合法的正常游戏使用。
@@ -18,7 +19,7 @@ Chinese Notice
 以上限制是防止不怀好意的人，如无恶意可以放宽全部限制。
 
 Standalone TFC + Firmalife compatibility patch.
-This version provides temperature control for greenhouses and cellars, compatibility with common container cellars, as well as the disassembly formula for greenhouse building materials. It also adds a large number of configuration items, and introduces the function of mixed greenhouses and cellars, allowing for customization of greenhouse cellar walls, etc.
+This version provides temperature control for greenhouses and cellars, common container and Immersive Engineering wooden/reinforced crate cellar compatibility, as well as greenhouse material salvage recipes. It also adds extensive configuration options and mixed greenhouse / cellar support, allowing custom greenhouse and cellar walls.
 Added compatibility for TFE.
 
 English Notice
