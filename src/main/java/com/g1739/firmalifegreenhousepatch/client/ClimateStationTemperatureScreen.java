@@ -1,9 +1,9 @@
 package com.g1739.firmalifegreenhousepatch.client;
 
 import com.g1739.firmalifegreenhousepatch.common.menu.ClimateStationTemperatureMenu;
+import com.g1739.firmalifegreenhousepatch.common.temperature.GreenhouseTemperatureHelper;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import net.dries007.tfc.client.RenderHelpers;
 import net.dries007.tfc.client.screen.TFCContainerScreen;
 import net.dries007.tfc.network.ScreenButtonPacket;
@@ -105,7 +105,7 @@ public final class ClimateStationTemperatureScreen extends TFCContainerScreen<Cl
         else if (menu.isCellarMode())
         {
             flgp$drawScaledCenteredLine(graphics, Component.translatable(menu.getStructureSummaryKey(), Component.translatable(menu.getStructureNameKey()), menu.getBaseControlRange()), middleCenter, 61, DETAIL_SCALE, TEXT_COLOR);
-            flgp$drawScaledCenteredLine(graphics, Component.translatable("screen.firmalife_greenhouse_patch.cellar_preservation", flgp$formatFactor(menu.getCellarPreservationMultiplier()), menu.getCellarDecayPercent()), middleCenter, 67, DETAIL_SCALE, TEXT_COLOR);
+            flgp$drawScaledCenteredLine(graphics, Component.translatable("screen.firmalife_greenhouse_patch.cellar_preservation", GreenhouseTemperatureHelper.formatFactor(menu.getCellarPreservationMultiplier()), menu.getCellarDecayPercent()), middleCenter, 67, DETAIL_SCALE, TEXT_COLOR);
             flgp$drawScaledCenteredLine(graphics, Component.translatable("screen.firmalife_greenhouse_patch.status_line", menu.getAmbientTemperature(), menu.getEffectiveTemperature()), middleCenter, 73, DETAIL_SCALE, TEXT_COLOR);
             flgp$drawScaledCenteredLine(graphics, Component.translatable("screen.firmalife_greenhouse_patch.allowed_range", menu.getMinAllowedTemperature(), menu.getMaxAllowedTemperature()), middleCenter, 79, DETAIL_SCALE, TEXT_COLOR);
         }
@@ -259,7 +259,7 @@ public final class ClimateStationTemperatureScreen extends TFCContainerScreen<Cl
     {
         return "%d x %s x %d -> +%d\u00B0C".formatted(
             menu.getHeatingItemCount(),
-            flgp$formatFactor(menu.getHeatingUnitFactor()),
+            GreenhouseTemperatureHelper.formatFactor(menu.getHeatingUnitFactor()),
             menu.getBaseControlRange(),
             menu.getHeatingControlRange()
         );
@@ -268,7 +268,7 @@ public final class ClimateStationTemperatureScreen extends TFCContainerScreen<Cl
     private String flgp$getCoolingFormula()
     {
         final String factor = menu.hasCoolingItem()
-            ? flgp$formatFactor(menu.getCoolingUnitFactor())
+            ? GreenhouseTemperatureHelper.formatFactor(menu.getCoolingUnitFactor())
             : Component.translatable("screen.firmalife_greenhouse_patch.factor_placeholder").getString();
         return "%d x %s x %d -> -%d\u00B0C".formatted(
             menu.getCoolingItemCount(),
@@ -284,6 +284,10 @@ public final class ClimateStationTemperatureScreen extends TFCContainerScreen<Cl
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.heating_slot"));
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.heating_hint"));
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.heating_rule"));
+        if (menu.hasHeatingItem())
+        {
+            lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.heating_current", menu.getHeatingItemName(), GreenhouseTemperatureHelper.formatFactor(menu.getHeatingUnitFactor())));
+        }
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.formula_result", flgp$getHeatingFormula()));
         return lines;
     }
@@ -296,7 +300,7 @@ public final class ClimateStationTemperatureScreen extends TFCContainerScreen<Cl
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.cooling_rule"));
         if (menu.hasCoolingItem())
         {
-            lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.cooling_current", Component.translatable(menu.getCoolingItemNameKey()), flgp$formatFactor(menu.getCoolingUnitFactor())));
+            lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.cooling_current", menu.getCoolingItemName(), GreenhouseTemperatureHelper.formatFactor(menu.getCoolingUnitFactor())));
         }
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.formula_result", flgp$getCoolingFormula()));
         return lines;
@@ -310,24 +314,11 @@ public final class ClimateStationTemperatureScreen extends TFCContainerScreen<Cl
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.status_effective", menu.getEffectiveTemperature()));
         if (menu.isCellarMode())
         {
-            lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.current_preservation", flgp$formatFactor(menu.getCellarPreservationMultiplier()), menu.getCellarDecayPercent()));
+            lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.current_preservation", GreenhouseTemperatureHelper.formatFactor(menu.getCellarPreservationMultiplier()), menu.getCellarDecayPercent()));
         }
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.status_range", menu.getMinAllowedTemperature(), menu.getMaxAllowedTemperature()));
         lines.add(Component.translatable("screen.firmalife_greenhouse_patch.tooltip.status_rounding"));
         return lines;
-    }
-
-    private String flgp$formatFactor(float factor)
-    {
-        if (Math.abs(factor - Math.round(factor)) < 0.0001f)
-        {
-            return Integer.toString(Math.round(factor));
-        }
-        if (Math.abs(factor * 10f - Math.round(factor * 10f)) < 0.0001f)
-        {
-            return String.format(Locale.ROOT, "%.1f", factor);
-        }
-        return String.format(Locale.ROOT, "%.2f", factor);
     }
 
     private List<FormattedCharSequence> flgp$getTooltipText(List<Component> lines)

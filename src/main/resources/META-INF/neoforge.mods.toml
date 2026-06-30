@@ -8,7 +8,9 @@ version = "${file.jarVersion}"
 displayName = "温室地窖重置-Firmalife Enhance"
 authors = "交错次元"
 description = '''独立的 TFC + Firmalife 兼容补丁。
-提供气象站对温室地窖温控、地窖里箱子和大缸兼容与温室建材拆解配方，可以回收低级温室,详情可直接查看气象站。
+提供温室与地窖的气象站控温、常见容器与 IE 木制储物箱 / 强化储物箱地窖兼容，以及温室建材拆解配方。
+本版本新增大量配置项目，支持自定义热源/冷源、混合温室、配置化地窖墙体与温室/地窖墙体规则。
+1.21 版本不包含 TFE 依赖；1.20 的 TFE 兼容内容在 1.21 中改接原生 TFC / Firmalife 内容。
 
 中文声明
 本模组采用 ARR 协议。
@@ -20,7 +22,9 @@ description = '''独立的 TFC + Firmalife 兼容补丁。
 本声明及后续协议仅限制别有用心的人和反对AI编程并带节奏的人群，如无恶意，可以放宽全部要求并提供源码.
 
 Standalone TFC + Firmalife compatibility patch.
-Adds climate-station temperature control for greenhouses and cellars, cellar compatibility for chests and large vessels, and greenhouse material salvage recipes. Lower-tier greenhouse materials can be recovered; see the climate station for details.
+This version provides climate-station temperature control for greenhouses and cellars, common container and Immersive Engineering wooden/reinforced crate cellar compatibility, and greenhouse material salvage recipes.
+It also adds extensive configuration options, including custom heating/cooling items, mixed greenhouses, configurable cellar walls, and greenhouse/cellar wall rules.
+The 1.21 build does not depend on TFE; features that required TFE compatibility on 1.20 are handled through native TFC / Firmalife content on 1.21.
 
 English Notice
 This mod is distributed under ARR.

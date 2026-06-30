@@ -1,12 +1,13 @@
 package com.g1739.firmalifegreenhousepatch.common.temperature;
 
 import com.eerussianguy.firmalife.common.blockentities.ClimateType;
+import com.g1739.firmalifegreenhousepatch.common.config.PatchConfig;
+import java.util.Locale;
 import net.dries007.tfc.util.climate.Climate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 
 public final class GreenhouseTemperatureHelper
 {
@@ -26,66 +27,49 @@ public final class GreenhouseTemperatureHelper
 
     private GreenhouseTemperatureHelper() {}
 
+    public static int getDefaultTemperature()
+    {
+        return PatchConfig.getDefaultTemperature();
+    }
+
+    public static int getMinimumCellarTemperature()
+    {
+        return PatchConfig.getMinimumCellarTemperature();
+    }
+
     public static int clampTemperature(int temperature)
     {
-        return Mth.clamp(temperature, MIN_TEMPERATURE, MAX_TEMPERATURE);
+        return Mth.clamp(temperature, PatchConfig.getMinimumTemperature(), PatchConfig.getMaximumTemperature());
     }
 
     public static boolean isHeatingItem(ItemStack stack)
     {
-        return !stack.isEmpty() && stack.is(Blocks.MAGMA_BLOCK.asItem());
+        return !stack.isEmpty() && getHeatingUnitFactor(stack) > 0f;
     }
 
     public static boolean isCoolingItem(ItemStack stack)
     {
-        return !stack.isEmpty() && (
-            stack.is(Blocks.ICE.asItem()) ||
-                stack.is(Blocks.PACKED_ICE.asItem()) ||
-                stack.is(Blocks.BLUE_ICE.asItem())
-        );
+        return !stack.isEmpty() && getCoolingUnitFactor(stack) > 0f;
     }
 
     public static float getHeatingMultiplier(ItemStack stack)
     {
-        return isHeatingItem(stack) ? stack.getCount() * MAGMA_BLOCK_FACTOR : 0f;
+        return stack.isEmpty() ? 0f : stack.getCount() * getHeatingUnitFactor(stack);
     }
 
     public static float getCoolingMultiplier(ItemStack stack)
     {
-        if (stack.isEmpty())
-        {
-            return 0f;
-        }
-        if (stack.is(Blocks.BLUE_ICE.asItem()))
-        {
-            return stack.getCount() * BLUE_ICE_FACTOR;
-        }
-        if (stack.is(Blocks.PACKED_ICE.asItem()))
-        {
-            return stack.getCount() * PACKED_ICE_FACTOR;
-        }
-        if (stack.is(Blocks.ICE.asItem()))
-        {
-            return stack.getCount() * ICE_FACTOR;
-        }
-        return 0f;
+        return stack.isEmpty() ? 0f : stack.getCount() * getCoolingUnitFactor(stack);
+    }
+
+    public static float getHeatingUnitFactor(ItemStack stack)
+    {
+        return PatchConfig.getHeatingItemFactor(stack);
     }
 
     public static float getCoolingUnitFactor(ItemStack stack)
     {
-        if (stack.is(Blocks.BLUE_ICE.asItem()))
-        {
-            return BLUE_ICE_FACTOR;
-        }
-        if (stack.is(Blocks.PACKED_ICE.asItem()))
-        {
-            return PACKED_ICE_FACTOR;
-        }
-        if (stack.is(Blocks.ICE.asItem()))
-        {
-            return ICE_FACTOR;
-        }
-        return 0f;
+        return PatchConfig.getCoolingItemFactor(stack);
     }
 
     public static int getAmbientTemperature(Level level, BlockPos stationPos)
@@ -97,7 +81,7 @@ public final class GreenhouseTemperatureHelper
     {
         if (station.flgp$getClimateType() == ClimateType.CELLAR)
         {
-            return CELLAR_CONTROL_RANGE;
+            return PatchConfig.getCellarBaseControlRange();
         }
 
         final int tier = Math.max(0, station.flgp$getGreenhouseTier());
@@ -105,7 +89,13 @@ public final class GreenhouseTemperatureHelper
         {
             return 0;
         }
-        return station.flgp$isStainlessGreenhouse() ? tier + 5 : tier;
+        final GreenhouseStructureData structureData = station.flgp$getGreenhouseStructureData();
+        if (structureData != null)
+        {
+            return tier + Math.max(0, structureData.controlBonus());
+        }
+
+        return tier;
     }
 
     public static int getHeatingControlRange(ClimateStationAccess station)
@@ -131,14 +121,28 @@ public final class GreenhouseTemperatureHelper
     public static int getMinAllowedTemperature(Level level, BlockPos stationPos, ClimateStationAccess station)
     {
         final int minTemperature = getAmbientTemperature(level, stationPos) - getCoolingControlRange(station);
+        final int clamped = Mth.clamp(minTemperature, PatchConfig.getMinimumTemperature(), PatchConfig.getMaximumTemperature());
         return station.flgp$getClimateType() == ClimateType.CELLAR
-            ? Math.max(CELLAR_MIN_TEMPERATURE, minTemperature)
-            : minTemperature;
+            ? Math.max(getMinimumCellarTemperature(), clamped)
+            : clamped;
     }
 
     public static int getMaxAllowedTemperature(Level level, BlockPos stationPos, ClimateStationAccess station)
     {
-        return getAmbientTemperature(level, stationPos) + getHeatingControlRange(station);
+        final int maxTemperature = getAmbientTemperature(level, stationPos) + getHeatingControlRange(station);
+        return Mth.clamp(maxTemperature, PatchConfig.getMinimumTemperature(), PatchConfig.getMaximumTemperature());
+    }
+
+    public static int getDisplayedMinTemperatureLimit(ClimateStationAccess station)
+    {
+        return station.flgp$getClimateType() == ClimateType.CELLAR
+            ? Math.max(PatchConfig.getMinimumCellarTemperature(), PatchConfig.getMinimumTemperature())
+            : PatchConfig.getMinimumTemperature();
+    }
+
+    public static int getDisplayedMaxTemperatureLimit(ClimateStationAccess station)
+    {
+        return PatchConfig.getMaximumTemperature();
     }
 
     public static int clampRequestedTemperature(Level level, BlockPos stationPos, ClimateStationAccess station, int requestedTemperature)
@@ -166,5 +170,22 @@ public final class GreenhouseTemperatureHelper
     public static boolean isControlledGreenhouse(Level level, BlockPos pos)
     {
         return ClimateStationRegistry.findControllingStation(level, pos) != null;
+    }
+
+    public static String formatFactor(float factor)
+    {
+        if (Float.isInfinite(factor))
+        {
+            return "\u221e";
+        }
+        if (Math.abs(factor - Math.round(factor)) < 0.0001f)
+        {
+            return Integer.toString(Math.round(factor));
+        }
+        if (Math.abs(factor * 10f - Math.round(factor * 10f)) < 0.0001f)
+        {
+            return String.format(Locale.ROOT, "%.1f", factor);
+        }
+        return String.format(Locale.ROOT, "%.2f", factor);
     }
 }

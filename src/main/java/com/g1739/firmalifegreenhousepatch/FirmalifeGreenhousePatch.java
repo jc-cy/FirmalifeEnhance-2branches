@@ -4,6 +4,7 @@ import com.g1739.firmalifegreenhousepatch.client.PatchClientEventHandler;
 import com.g1739.firmalifegreenhousepatch.common.ModFoodTraits;
 import com.g1739.firmalifegreenhousepatch.common.ModMenuTypes;
 import com.g1739.firmalifegreenhousepatch.common.ModRecipeSerializers;
+import com.g1739.firmalifegreenhousepatch.common.config.PatchConfig;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -17,6 +18,7 @@ public final class FirmalifeGreenhousePatch
 
     public FirmalifeGreenhousePatch(ModContainer mod, IEventBus bus)
     {
+        PatchConfig.register(mod, bus);
         ModFoodTraits.TRAITS.register(bus);
         ModMenuTypes.MENUS.register(bus);
         ModRecipeSerializers.RECIPE_SERIALIZERS.register(bus);

@@ -14,7 +14,7 @@ val jeiDevJars = fileTree(localModsDir) {
 }
 
 val modId = "firmalife_greenhouse_patch"
-val modVersion = System.getenv("VERSION") ?: "0.1.2"
+val modVersion = System.getenv("VERSION") ?: "0.1.4"
 val modJavaVersion = "21"
 
 group = "com.g1739.firmalifegreenhousepatch"
@@ -80,6 +80,7 @@ dependencies {
 
     compileOnly(jeiDevJars)
 
+    compileOnly("vazkii.patchouli:Patchouli:$patchouliVersion")
     runtimeOnly("vazkii.patchouli:Patchouli:$patchouliVersion")
 }
 

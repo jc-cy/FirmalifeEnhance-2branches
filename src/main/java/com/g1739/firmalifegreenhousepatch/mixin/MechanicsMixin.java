@@ -1,6 +1,8 @@
 package com.g1739.firmalifegreenhousepatch.mixin;
 
 import com.eerussianguy.firmalife.config.FLConfig;
+import com.g1739.firmalifegreenhousepatch.common.config.PatchConfig;
+import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
@@ -19,7 +21,7 @@ public abstract class MechanicsMixin
     )
     private static int flgp$increaseCellarRadius(int original)
     {
-        return Math.min(128, FLConfig.SERVER.cellarRadius.get() * 2);
+        return Math.min(128, Mth.ceil(FLConfig.SERVER.cellarRadius.get() * PatchConfig.getCellarRadiusMultiplier()));
     }
 
     @ModifyArg(
@@ -33,6 +35,6 @@ public abstract class MechanicsMixin
     )
     private static int flgp$increaseGreenhouseRadius(int original)
     {
-        return Math.min(128, FLConfig.SERVER.greenhouseRadius.get() * 2);
+        return Math.min(128, Mth.ceil(FLConfig.SERVER.greenhouseRadius.get() * PatchConfig.getGreenhouseRadiusMultiplier()));
     }
 }

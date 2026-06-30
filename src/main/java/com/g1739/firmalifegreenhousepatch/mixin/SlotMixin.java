@@ -31,5 +31,9 @@ public abstract class SlotMixin
         {
             CellarPreservationHelper.syncTFCChestBlockEntity(chest);
         }
+        else
+        {
+            CellarPreservationHelper.syncExternalContainer(container);
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.eerussianguy.firmalife.common.blockentities.ClimateType;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import org.jetbrains.annotations.Nullable;
 
 public interface ClimateStationAccess
 {
@@ -22,4 +23,13 @@ public interface ClimateStationAccess
     int flgp$getGreenhouseTier();
 
     boolean flgp$isStainlessGreenhouse();
+
+    @Nullable
+    GreenhouseStructureData flgp$getGreenhouseStructureData();
+
+    void flgp$setGreenhouseStructureData(@Nullable GreenhouseStructureData data);
+
+    boolean flgp$hasFavoriteGreenhouseType();
+
+    void flgp$clearFavoriteClimateHints();
 }

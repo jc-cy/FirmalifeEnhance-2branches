@@ -1,16 +1,25 @@
 package com.g1739.firmalifegreenhousepatch.mixin;
 
-import com.eerussianguy.firmalife.common.blockentities.ClimateType;
 import com.eerussianguy.firmalife.common.blockentities.ClimateStationBlockEntity;
+import com.eerussianguy.firmalife.common.blockentities.ClimateType;
+import com.eerussianguy.firmalife.common.util.FLAdvancements;
+import com.eerussianguy.firmalife.common.util.GreenhouseType;
+import com.eerussianguy.firmalife.common.util.Mechanics;
 import com.g1739.firmalifegreenhousepatch.common.menu.ClimateStationTemperatureMenu;
 import com.g1739.firmalifegreenhousepatch.common.temperature.CellarPreservationHelper;
 import com.g1739.firmalifegreenhousepatch.common.temperature.ClimateStationAccess;
+import com.g1739.firmalifegreenhousepatch.common.temperature.ClimateStationRegistry;
+import com.g1739.firmalifegreenhousepatch.common.temperature.ConfiguredCellarDetector;
 import com.g1739.firmalifegreenhousepatch.common.temperature.GreenhouseTemperatureHelper;
-import java.util.Locale;
+import com.g1739.firmalifegreenhousepatch.common.temperature.MixedGreenhouseDetector;
+import com.mojang.datafixers.util.Either;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import net.dries007.tfc.util.Helpers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
@@ -19,7 +28,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -28,6 +39,29 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(com.eerussianguy.firmalife.common.blocks.greenhouse.ClimateStationBlock.class)
 public abstract class ClimateStationBlockMixin
 {
+    @Inject(method = "check", at = @At("HEAD"), cancellable = true, require = 0)
+    private static void flgp$replaceClimateCheck(Level level, BlockPos pos, BlockState state, CallbackInfoReturnable<Either<Mechanics.GreenhouseInfo, Set<BlockPos>>> cir)
+    {
+        final StructureCheckResult result = flgp$checkStructure(level, pos, state);
+        if (result == null)
+        {
+            cir.setReturnValue(null);
+            return;
+        }
+
+        if (result.greenhouseResult() != null)
+        {
+            final GreenhouseType representativeType = result.greenhouseResult().representativeType();
+            final GreenhouseType displayType = representativeType != null ? representativeType : flgp$getFallbackGreenhouseType();
+            cir.setReturnValue(displayType != null
+                ? Either.left(new Mechanics.GreenhouseInfo(displayType, result.greenhouseResult().positions()))
+                : null);
+            return;
+        }
+
+        cir.setReturnValue(Either.right(result.cellarPositions()));
+    }
+
     @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
     private void flgp$openTemperatureMenu(ItemStack held, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit, CallbackInfoReturnable<ItemInteractionResult> cir)
     {
@@ -47,17 +81,62 @@ public abstract class ClimateStationBlockMixin
         cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
     }
 
+    @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
+    private void flgp$useMixedClimateCheck(ItemStack held, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit, CallbackInfoReturnable<ItemInteractionResult> cir)
+    {
+        if (player.isShiftKeyDown() && hand == InteractionHand.MAIN_HAND && player.getMainHandItem().isEmpty())
+        {
+            return;
+        }
+
+        final boolean willConsumeAction = level.getBlockEntity(pos) instanceof ClimateStationBlockEntity station && station.setFavorite(held);
+        final StructureCheckResult result = flgp$checkStructure(level, pos, state);
+        if (result == null)
+        {
+            cir.setReturnValue(willConsumeAction ? ItemInteractionResult.sidedSuccess(level.isClientSide) : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION);
+            return;
+        }
+
+        if (!level.isClientSide())
+        {
+            if (result.greenhouseResult() != null)
+            {
+                final MixedGreenhouseDetector.Result greenhouse = result.greenhouseResult();
+                if (greenhouse.positions().size() > 200 && player instanceof ServerPlayer server && greenhouse.isRepresentativeStainless())
+                {
+                    FLAdvancements.BIG_STAINLESS_GREENHOUSE.trigger(server);
+                }
+                player.displayClientMessage(Component.translatable("firmalife.greenhouse.found", greenhouse.foundTitle(), greenhouse.positions().size()), true);
+            }
+            else if (result.cellarPositions() != null)
+            {
+                if (result.cellarPositions().size() > 200 && player instanceof ServerPlayer server)
+                {
+                    FLAdvancements.BIG_CELLAR.trigger(server);
+                }
+                player.displayClientMessage(Component.translatable("firmalife.cellar.found", result.cellarPositions().size()), true);
+            }
+        }
+
+        cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+    }
+
     @Inject(method = "addHoeOverlayInfo", at = @At("TAIL"))
     private void flgp$addTemperatureTooltip(Level level, BlockPos pos, BlockState state, Consumer<Component> tooltip, boolean debug, CallbackInfo ci)
     {
-        if (level.getBlockEntity(pos) instanceof ClimateStationAccess station)
+        if (level.getBlockEntity(pos) instanceof ClimateStationBlockEntity blockEntity && blockEntity instanceof ClimateStationAccess station)
         {
+            if (!ClimateStationRegistry.isActiveStation(blockEntity, station))
+            {
+                tooltip.accept(Component.translatable("screen.firmalife_greenhouse_patch.inactive"));
+                return;
+            }
             tooltip.accept(Component.translatable("firmalife_greenhouse_patch.tooltip.current_effective_temperature", station.flgp$getTargetTemperature()));
             if (station.flgp$getClimateType() == ClimateType.CELLAR)
             {
                 tooltip.accept(Component.translatable(
                     "firmalife_greenhouse_patch.tooltip.current_preservation",
-                    flgp$formatFactor(CellarPreservationHelper.getCellarPreservationMultiplier(level, pos)),
+                    GreenhouseTemperatureHelper.formatFactor(CellarPreservationHelper.getCellarPreservationMultiplier(level, pos)),
                     CellarPreservationHelper.getCellarDecayPercent(level, pos)
                 ));
             }
@@ -67,8 +146,14 @@ public abstract class ClimateStationBlockMixin
                 GreenhouseTemperatureHelper.getMinAllowedTemperature(level, pos, station),
                 GreenhouseTemperatureHelper.getMaxAllowedTemperature(level, pos, station)
             ));
-            tooltip.accept(Component.translatable("firmalife_greenhouse_patch.tooltip.heating_items"));
-            tooltip.accept(Component.translatable("firmalife_greenhouse_patch.tooltip.cooling_items"));
+            tooltip.accept(Component.translatable(
+                "firmalife_greenhouse_patch.tooltip.heating_items",
+                GreenhouseTemperatureHelper.getDisplayedMaxTemperatureLimit(station)
+            ));
+            tooltip.accept(Component.translatable(
+                "firmalife_greenhouse_patch.tooltip.cooling_items",
+                GreenhouseTemperatureHelper.getDisplayedMinTemperatureLimit(station)
+            ));
             tooltip.accept(Component.translatable("firmalife_greenhouse_patch.tooltip.open_menu"));
         }
     }
@@ -94,20 +179,96 @@ public abstract class ClimateStationBlockMixin
         }
     }
 
-    private static String flgp$formatFactor(float factor)
+    @Unique
+    @Nullable
+    private static StructureCheckResult flgp$checkStructure(Level level, BlockPos pos, BlockState state)
     {
-        if (Float.isInfinite(factor))
+        final MixedGreenhouseDetector.Result greenhouse = MixedGreenhouseDetector.detect(level, pos);
+        if (greenhouse != null)
         {
-            return "\u221e";
+            if (level.getBlockEntity(pos) instanceof ClimateStationBlockEntity station)
+            {
+                if (station instanceof ClimateStationAccess access)
+                {
+                    access.flgp$setGreenhouseStructureData(greenhouse.structureData());
+                    if (greenhouse.representativeType() == null)
+                    {
+                        access.flgp$clearFavoriteClimateHints();
+                    }
+                }
+                if (greenhouse.representativeType() != null)
+                {
+                    station.setFavorite(greenhouse.representativeType());
+                }
+                station.setPositions(new HashSet<>(greenhouse.positions()));
+                station.updateValidity(true, greenhouse.tier());
+                station.setType(ClimateType.GREENHOUSE);
+            }
+            flgp$updateState(level, pos, state, true);
+            return new StructureCheckResult(greenhouse, null);
         }
-        if (Math.abs(factor - Math.round(factor)) < 0.0001f)
+
+        final Set<BlockPos> cellarPositions = ConfiguredCellarDetector.detect(level, pos);
+        if (cellarPositions != null)
         {
-            return Integer.toString(Math.round(factor));
+            if (level.getBlockEntity(pos) instanceof ClimateStationBlockEntity station)
+            {
+                if (station instanceof ClimateStationAccess access)
+                {
+                    access.flgp$setGreenhouseStructureData(null);
+                }
+                station.setPositions(new HashSet<>(cellarPositions));
+                station.updateValidity(true, 0);
+                station.setType(ClimateType.CELLAR);
+            }
+            flgp$updateState(level, pos, state, true);
+            return new StructureCheckResult(null, cellarPositions);
         }
-        if (Math.abs(factor * 10f - Math.round(factor * 10f)) < 0.0001f)
-        {
-            return String.format(Locale.ROOT, "%.1f", factor);
-        }
-        return String.format(Locale.ROOT, "%.2f", factor);
+
+        flgp$denyAll(level, pos);
+        flgp$updateState(level, pos, state, false);
+        return null;
     }
+
+    @Unique
+    private static void flgp$denyAll(Level level, BlockPos pos)
+    {
+        if (level.getBlockEntity(pos) instanceof ClimateStationBlockEntity station)
+        {
+            if (station instanceof ClimateStationAccess access)
+            {
+                access.flgp$setGreenhouseStructureData(null);
+            }
+            station.updateValidity(false, 0);
+        }
+    }
+
+    @Unique
+    private static void flgp$updateState(Level level, BlockPos pos, BlockState state, boolean valid)
+    {
+        final Boolean currentValue = state.getOptionalValue(com.eerussianguy.firmalife.common.blocks.greenhouse.ClimateStationBlock.STASIS).orElse(false);
+        if (currentValue != valid)
+        {
+            level.setBlockAndUpdate(pos, state.setValue(com.eerussianguy.firmalife.common.blocks.greenhouse.ClimateStationBlock.STASIS, valid));
+        }
+    }
+
+    @Unique
+    @Nullable
+    private static GreenhouseType flgp$getFallbackGreenhouseType()
+    {
+        GreenhouseType type = GreenhouseType.MANAGER.get(ResourceLocation.fromNamespaceAndPath("firmalife", "treated_wood"));
+        if (type != null)
+        {
+            return type;
+        }
+        for (GreenhouseType candidate : GreenhouseType.MANAGER.getValues())
+        {
+            return candidate;
+        }
+        return null;
+    }
+
+    @Unique
+    private record StructureCheckResult(@Nullable MixedGreenhouseDetector.Result greenhouseResult, @Nullable Set<BlockPos> cellarPositions) {}
 }

@@ -124,19 +124,19 @@ public final class ClimateStationTemperatureMenu extends Container implements Bu
     public int getRequestedTemperature()
     {
         final ClimateStationAccess station = getStation();
-        return station != null ? station.flgp$getRequestedTemperature() : GreenhouseTemperatureHelper.DEFAULT_TEMPERATURE;
+        return station != null ? station.flgp$getRequestedTemperature() : GreenhouseTemperatureHelper.getDefaultTemperature();
     }
 
     public int getEffectiveTemperature()
     {
         final ClimateStationAccess station = getStation();
-        return station != null ? station.flgp$getTargetTemperature() : GreenhouseTemperatureHelper.DEFAULT_TEMPERATURE;
+        return station != null ? station.flgp$getTargetTemperature() : GreenhouseTemperatureHelper.getDefaultTemperature();
     }
 
     public int getAmbientTemperature()
     {
         final ClimateStationAccess station = getStation();
-        return station != null ? GreenhouseTemperatureHelper.getAmbientTemperature(playerInventory.player.level(), stationPos) : GreenhouseTemperatureHelper.DEFAULT_TEMPERATURE;
+        return station != null ? GreenhouseTemperatureHelper.getAmbientTemperature(playerInventory.player.level(), stationPos) : GreenhouseTemperatureHelper.getDefaultTemperature();
     }
 
     public int getBaseControlRange()
@@ -175,7 +175,7 @@ public final class ClimateStationTemperatureMenu extends Container implements Bu
 
     public float getHeatingUnitFactor()
     {
-        return GreenhouseTemperatureHelper.MAGMA_BLOCK_FACTOR;
+        return GreenhouseTemperatureHelper.getHeatingUnitFactor(thermalInventory.getStackInSlot(GreenhouseTemperatureHelper.HEATING_SLOT));
     }
 
     public float getCoolingUnitFactor()
@@ -193,34 +193,37 @@ public final class ClimateStationTemperatureMenu extends Container implements Bu
         return !thermalInventory.getStackInSlot(GreenhouseTemperatureHelper.COOLING_SLOT).isEmpty();
     }
 
-    public String getCoolingItemNameKey()
+    public boolean hasHeatingItem()
+    {
+        return !thermalInventory.getStackInSlot(GreenhouseTemperatureHelper.HEATING_SLOT).isEmpty();
+    }
+
+    public Component getHeatingItemName()
+    {
+        final ItemStack stack = thermalInventory.getStackInSlot(GreenhouseTemperatureHelper.HEATING_SLOT);
+        return stack.isEmpty()
+            ? Component.translatable("screen.firmalife_greenhouse_patch.heating_item.none")
+            : stack.getHoverName();
+    }
+
+    public Component getCoolingItemName()
     {
         final ItemStack stack = thermalInventory.getStackInSlot(GreenhouseTemperatureHelper.COOLING_SLOT);
-        if (stack.isEmpty())
-        {
-            return "screen.firmalife_greenhouse_patch.cooling_item.none";
-        }
-        if (stack.is(net.minecraft.world.level.block.Blocks.BLUE_ICE.asItem()))
-        {
-            return "screen.firmalife_greenhouse_patch.cooling_item.blue_ice";
-        }
-        if (stack.is(net.minecraft.world.level.block.Blocks.PACKED_ICE.asItem()))
-        {
-            return "screen.firmalife_greenhouse_patch.cooling_item.packed_ice";
-        }
-        return "screen.firmalife_greenhouse_patch.cooling_item.ice";
+        return stack.isEmpty()
+            ? Component.translatable("screen.firmalife_greenhouse_patch.cooling_item.none")
+            : stack.getHoverName();
     }
 
     public int getMinAllowedTemperature()
     {
         final ClimateStationAccess station = getStation();
-        return station != null ? GreenhouseTemperatureHelper.getMinAllowedTemperature(playerInventory.player.level(), stationPos, station) : GreenhouseTemperatureHelper.DEFAULT_TEMPERATURE;
+        return station != null ? GreenhouseTemperatureHelper.getMinAllowedTemperature(playerInventory.player.level(), stationPos, station) : GreenhouseTemperatureHelper.getDefaultTemperature();
     }
 
     public int getMaxAllowedTemperature()
     {
         final ClimateStationAccess station = getStation();
-        return station != null ? GreenhouseTemperatureHelper.getMaxAllowedTemperature(playerInventory.player.level(), stationPos, station) : GreenhouseTemperatureHelper.DEFAULT_TEMPERATURE;
+        return station != null ? GreenhouseTemperatureHelper.getMaxAllowedTemperature(playerInventory.player.level(), stationPos, station) : GreenhouseTemperatureHelper.getDefaultTemperature();
     }
 
     public int clampRequestedTemperature(int temperature)
@@ -245,6 +248,11 @@ public final class ClimateStationTemperatureMenu extends Container implements Bu
         }
 
         final int baseRange = getBaseControlRange();
+        final ClimateStationAccess station = getStation();
+        if (station != null && station.flgp$getGreenhouseStructureData() != null)
+        {
+            return station.flgp$getGreenhouseStructureData().displayNameKey();
+        }
         if (baseRange >= 25)
         {
             return "screen.firmalife_greenhouse_patch.greenhouse.stainless_steel";

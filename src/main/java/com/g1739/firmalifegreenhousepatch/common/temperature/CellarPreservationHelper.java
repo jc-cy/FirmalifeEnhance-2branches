@@ -4,8 +4,10 @@ import com.eerussianguy.firmalife.common.blockentities.ClimateReceiver;
 import com.eerussianguy.firmalife.common.blockentities.ClimateType;
 import com.eerussianguy.firmalife.common.items.FLFoodTraits;
 import com.g1739.firmalifegreenhousepatch.common.ModFoodTraits;
+import com.g1739.firmalifegreenhousepatch.common.config.PatchConfig;
 import java.util.IdentityHashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -41,6 +43,7 @@ public final class CellarPreservationHelper
         ModFoodTraits.CELLAR_8X
     );
     private static final Set<Object> SYNCING = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+    private static final String IE_WOODEN_CRATE_BLOCK_ENTITY = "blusunrize.immersiveengineering.common.blocks.wooden.WoodenCrateBlockEntity";
 
     private CellarPreservationHelper() {}
 
@@ -107,6 +110,10 @@ public final class CellarPreservationHelper
         {
             syncTFCChestBlockEntity(chest);
         }
+        else if (target instanceof Container container && shouldHandleExternalContainer(target))
+        {
+            syncContainerBlockEntity(target, container);
+        }
     }
 
     public static void syncInventoryBlockEntity(InventoryBlockEntity<?> inventory)
@@ -138,6 +145,27 @@ public final class CellarPreservationHelper
         final ClimateStationAccess station = ClimateStationRegistry.findControllingCellarStation(level, chest.getBlockPos());
         final @Nullable Holder<FoodTrait> trait = station != null ? getCellarTrait(level, chest.getBlockPos()) : null;
         syncTFCChestBlockEntity(chest, trait);
+    }
+
+    public static void syncExternalContainer(Container container)
+    {
+        if (container instanceof BlockEntity blockEntity && shouldHandleExternalContainer(blockEntity))
+        {
+            syncContainerBlockEntity(blockEntity, container);
+        }
+    }
+
+    public static void syncContainerBlockEntity(BlockEntity blockEntity, Container container)
+    {
+        final Level level = blockEntity.getLevel();
+        if (level == null || level.isClientSide())
+        {
+            return;
+        }
+
+        final ClimateStationAccess station = ClimateStationRegistry.findControllingCellarStation(level, blockEntity.getBlockPos());
+        final @Nullable Holder<FoodTrait> trait = station != null ? getCellarTrait(level, blockEntity.getBlockPos()) : null;
+        syncContainer(blockEntity, container, trait);
     }
 
     public static ItemStack sanitizeTakenStack(InventoryBlockEntity<?> inventory, ItemStack stack)
@@ -196,6 +224,11 @@ public final class CellarPreservationHelper
         sanitizeContainerForDrop(chest, chest);
     }
 
+    public static void sanitizeContainerBlockEntityForDrop(BlockEntity blockEntity, Container container)
+    {
+        sanitizeContainerForDrop(blockEntity, container);
+    }
+
     public static IItemHandler wrapSidedInventory(InventoryBlockEntity<?> inventory, @Nullable IItemHandler handler)
     {
         if (handler == null || !shouldHandleInventory(inventory))
@@ -214,34 +247,18 @@ public final class CellarPreservationHelper
     public static Holder<FoodTrait> getCellarTrait(Level level, BlockPos pos)
     {
         final float temp = Math.max(
-            GreenhouseTemperatureHelper.CELLAR_MIN_TEMPERATURE,
+            GreenhouseTemperatureHelper.getMinimumCellarTemperature(),
             GreenhouseTemperatureHelper.getControlledTemperature(level, pos, ClimateType.CELLAR, Climate.getAverageTemperature(level, pos))
         );
-        if (temp <= -24f)
+        final List<PatchConfig.CellarLevel> levels = PatchConfig.getCellarPreservationLevels();
+        for (int index = 0; index < levels.size(); index++)
         {
-            return ModFoodTraits.CELLAR_8X;
+            if (temp <= levels.get(index).maxTemperature())
+            {
+                return ModFoodTraits.getCellarTrait(index);
+            }
         }
-        if (temp <= -21f)
-        {
-            return ModFoodTraits.CELLAR_7X;
-        }
-        if (temp <= -18f)
-        {
-            return ModFoodTraits.CELLAR_6X;
-        }
-        if (temp <= -15f)
-        {
-            return ModFoodTraits.CELLAR_5X;
-        }
-        if (temp <= -12f)
-        {
-            return ModFoodTraits.CELLAR_4X;
-        }
-        if (temp < 0f)
-        {
-            return ModFoodTraits.CELLAR_3X;
-        }
-        return ModFoodTraits.CELLAR_2_5X;
+        return ModFoodTraits.getDefaultCellarTrait();
     }
 
     public static float getCellarDecayModifier(Level level, BlockPos pos)
@@ -264,6 +281,11 @@ public final class CellarPreservationHelper
     public static boolean shouldHandleInventory(InventoryBlockEntity<?> inventory)
     {
         return !(inventory instanceof ClimateReceiver) && !(inventory instanceof ClimateStationAccess);
+    }
+
+    private static boolean shouldHandleExternalContainer(BlockEntity blockEntity)
+    {
+        return IE_WOODEN_CRATE_BLOCK_ENTITY.equals(blockEntity.getClass().getName());
     }
 
     private static void syncInventoryBlockEntity(InventoryBlockEntity<?> inventory, @Nullable Holder<FoodTrait> trait)
@@ -313,6 +335,10 @@ public final class CellarPreservationHelper
         else if (target instanceof TFCChestBlockEntity chest)
         {
             syncTFCChestBlockEntity(chest, trait);
+        }
+        else if (target instanceof Container container && shouldHandleExternalContainer(target))
+        {
+            syncContainer(target, container, trait);
         }
     }
 
