@@ -27,7 +27,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = FruitTreeSaplingBlock.class, remap = false)
+// priority = 1100：TFE 用 @Overwrite 重写了 randomTick 与 addHoeOverlayInfo（默认 priority = 1000），
+// 必须让本 mixin 在它之后应用，`@Inject(HEAD)` 才能挂在 TFE 的方法体前面；
+// 否则整个方法体会被 TFE 替换、温室内果树苗的全年生长与温度提示失效。
+@Mixin(value = FruitTreeSaplingBlock.class, remap = false, priority = 1100)
 public abstract class TfeFruitTreeSaplingBlockMixin
 {
     @Shadow @Final private Supplier<ClimateRange> climateRange;

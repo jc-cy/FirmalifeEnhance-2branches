@@ -14,8 +14,10 @@ import java.util.Set;
 import net.dries007.tfc.common.blockentities.InventoryBlockEntity;
 import net.dries007.tfc.common.blockentities.TFCChestBlockEntity;
 import net.dries007.tfc.common.capabilities.Capabilities;
+import net.dries007.tfc.common.capabilities.VesselLike;
 import net.dries007.tfc.common.capabilities.food.FoodCapability;
 import net.dries007.tfc.common.capabilities.food.FoodTrait;
+import net.dries007.tfc.common.capabilities.food.FoodTraits;
 import net.dries007.tfc.util.climate.Climate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
@@ -28,6 +30,12 @@ import org.jetbrains.annotations.Nullable;
 
 public final class CellarPreservationHelper
 {
+    /**
+     * 总保鲜倍率上限：地窖档位与其它来源（例如 TFC 自带的 PRESERVED）相乘后不得超过该值，
+     * 超过时自动降档。与二代 `群峦现代化生活` 的口径一致。
+     */
+    private static final float MAX_TOTAL_PRESERVATION_MULTIPLIER = 10f;
+
     private static final Set<Object> SYNCING = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
     private static final String IE_WOODEN_CRATE_BLOCK_ENTITY = "blusunrize.immersiveengineering.common.blocks.wooden.WoodenCrateBlockEntity";
 
@@ -439,27 +447,126 @@ public final class CellarPreservationHelper
 
     private static boolean normalizeCellarTraits(ItemStack stack, @Nullable FoodTrait trait)
     {
+        return normalizeStackAndNestedContainers(stack, trait, 0);
+    }
+
+    private static boolean normalizeStackAndNestedContainers(ItemStack stack, @Nullable FoodTrait trait, int depth)
+    {
+        if (stack.isEmpty())
+        {
+            return false;
+        }
+
+        boolean changed = normalizeFoodStack(stack, trait);
+        if (depth < 2 && isNestedItemContainer(stack))
+        {
+            changed |= normalizeSmallVesselContents(stack, trait, depth + 1);
+        }
+        return changed;
+    }
+
+    private static boolean normalizeFoodStack(ItemStack stack, @Nullable FoodTrait trait)
+    {
         if (FoodCapability.get(stack) == null)
         {
             return false;
         }
 
+        final @Nullable FoodTrait effectiveTrait = getEffectiveCellarTrait(stack, trait);
         boolean changed = false;
         for (FoodTrait possible : getManagedCellarTraits())
         {
-            if (trait != possible && FoodCapability.hasTrait(stack, possible))
+            if (effectiveTrait != possible && FoodCapability.hasTrait(stack, possible))
             {
                 FoodCapability.removeTrait(stack, possible);
                 changed = true;
             }
         }
 
-        if (trait != null && !FoodCapability.hasTrait(stack, trait))
+        if (effectiveTrait != null && !FoodCapability.hasTrait(stack, effectiveTrait))
         {
-            FoodCapability.applyTrait(stack, trait);
+            FoodCapability.applyTrait(stack, effectiveTrait);
             changed = true;
         }
         return changed;
+    }
+
+    /**
+     * 嵌套容器保鲜：地窖容器里再放可装物品的容器（小缸等）时递归处理其中的食物，
+     * 避免"外层容器保鲜了、内层食物却不算数"。
+     */
+    private static boolean normalizeSmallVesselContents(ItemStack stack, @Nullable FoodTrait trait, int depth)
+    {
+        final @Nullable VesselLike vessel = VesselLike.get(stack);
+        if (vessel == null || vessel.mode() != VesselLike.Mode.INVENTORY)
+        {
+            return false;
+        }
+
+        boolean changed = false;
+        for (int slot = 0; slot < vessel.getSlots(); slot++)
+        {
+            final ItemStack contained = vessel.getStackInSlot(slot);
+            if (contained.isEmpty())
+            {
+                continue;
+            }
+            if (normalizeStackAndNestedContainers(contained, trait, depth))
+            {
+                vessel.setStackInSlot(slot, contained);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private static boolean isNestedItemContainer(ItemStack stack)
+    {
+        final @Nullable VesselLike vessel = VesselLike.get(stack);
+        return vessel != null && vessel.mode() == VesselLike.Mode.INVENTORY;
+    }
+
+    /**
+     * 按"总倍率不超过 {@link #MAX_TOTAL_PRESERVATION_MULTIPLIER}"折算实际应生效的地窖档位。
+     */
+    @Nullable
+    private static FoodTrait getEffectiveCellarTrait(ItemStack stack, @Nullable FoodTrait trait)
+    {
+        if (trait == null)
+        {
+            return null;
+        }
+        final float existingMultiplier = getExistingContainerPreservationMultiplier(stack);
+        if (!Float.isFinite(existingMultiplier) || existingMultiplier >= MAX_TOTAL_PRESERVATION_MULTIPLIER)
+        {
+            return null;
+        }
+        final float allowedCellarMultiplier = MAX_TOTAL_PRESERVATION_MULTIPLIER / existingMultiplier;
+        final float desiredMultiplier = Math.min(getTraitMultiplier(trait), allowedCellarMultiplier);
+        return getCellarTraitAtMost(desiredMultiplier);
+    }
+
+    private static float getExistingContainerPreservationMultiplier(ItemStack stack)
+    {
+        return FoodCapability.hasTrait(stack, FoodTraits.PRESERVED) ? getTraitMultiplier(FoodTraits.PRESERVED) : 1f;
+    }
+
+    private static float getTraitMultiplier(FoodTrait trait)
+    {
+        final float decayModifier = trait.getDecayModifier();
+        return decayModifier <= 0f ? Float.POSITIVE_INFINITY : 1f / decayModifier;
+    }
+
+    private static FoodTrait getCellarTraitAtMost(float multiplier)
+    {
+        for (FoodTrait candidate : ModFoodTraits.getCellarTraits())
+        {
+            if (getTraitMultiplier(candidate) <= multiplier)
+            {
+                return candidate;
+            }
+        }
+        return ModFoodTraits.getDefaultCellarTrait();
     }
 
     private static void removeCellarTraits(ItemStack stack)

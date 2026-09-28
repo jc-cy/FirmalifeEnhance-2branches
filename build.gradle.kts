@@ -15,30 +15,32 @@ val jeiVersion = "15.2.0.21"
 val tfcCurseVersion = "5872631"
 val firmalifeCurseVersion = "5456804"
 
-val tfcSourceDir = "C:/Users/g1739/Desktop/MCmod源码/TerraFirmaCraft-3.2.21-1.20"
-val firmalifeSourceDir = "C:/Users/g1739/Desktop/MCmod源码/firmalife-2.1.27-1.20"
-val configuredModsDir = "C:/Users/g1739/Desktop/PCL/.minecraft/versions/TerraFirmaFarHorizons/mods"
+// 稳定前置目录：沿用 skill 导航记录的 1.20 前置根目录（群峦前置源码/1.20），
+// 不再指向会随时变动的 PCL 实例 mods 目录。
+val prereqDir = providers.gradleProperty("prereqDir")
+    .orElse("C:/Users/g1739/Desktop/群峦前置源码/1.20/前置jar")
+    .get()
 
-val tfcLocalJars = fileTree("$tfcSourceDir/build/libs") {
+val tfcLocalJars = fileTree("$prereqDir/tfc") {
     include("*.jar")
     exclude("*-sources.jar", "*-javadoc.jar")
 }
-val firmalifeLocalJars = fileTree("$firmalifeSourceDir/build/libs") {
+val firmalifeLocalJars = fileTree("$prereqDir/firmalife") {
     include("*.jar")
     exclude("*-sources.jar", "*-javadoc.jar")
 }
-val configuredLocalJars = fileTree(configuredModsDir) {
-    include("configured-forge-1.20.1-*.jar")
+val configuredLocalJars = fileTree("$prereqDir/configui") {
+    include("configured-*.jar")
 }
-val forgeConfigScreensLocalJars = fileTree(configuredModsDir) {
-    include("ForgeConfigScreens-v*-1.20.1-Forge.jar")
+val forgeConfigScreensLocalJars = fileTree("$prereqDir/configui") {
+    include("ForgeConfigScreens-*.jar")
 }
-val immersiveEngineeringLocalJars = fileTree(configuredModsDir) {
-    include("ImmersiveEngineering-1.20.1-*.jar")
+val immersiveEngineeringLocalJars = fileTree("$prereqDir/immersiveengineering") {
+    include("*.jar")
 }
 
 val modId = "firmalife_greenhouse_patch"
-val modVersion = System.getenv("VERSION") ?: "0.1.4"
+val modVersion = System.getenv("VERSION") ?: "1.0.0"
 
 group = "com.g1739.firmalifegreenhousepatch"
 version = modVersion
@@ -119,6 +121,8 @@ minecraft {
             property("mixin.env.refMapRemappingFile", "$projectDir/build/createSrgToMcp/output.srg")
 
             jvmArgs("-ea", "-Xmx4G", "-Xms2G")
+            // IgnoreUnrecognizedVMOptions 必须放在前面：JDK 17 不认识 AllowEnhancedClassRedefinition（JDK 21+ 才有）
+            jvmArg("-XX:+IgnoreUnrecognizedVMOptions")
             jvmArg("-XX:+AllowEnhancedClassRedefinition")
 
             mods.create(modId) {
@@ -151,6 +155,15 @@ tasks.processResources {
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release.set(17)
+    doFirst {
+        if (configuredLocalJars.isEmpty || forgeConfigScreensLocalJars.isEmpty || immersiveEngineeringLocalJars.isEmpty)
+        {
+            throw GradleException(
+                "缺少可选编译前置。请把 configured-forge-1.20.1-*.jar 与 ForgeConfigScreens-v*-1.20.1-Forge.jar 放入 " +
+                    "$prereqDir/configui，把 ImmersiveEngineering-1.20.1-*.jar 放入 $prereqDir/immersiveengineering（可用 -PprereqDir=<目录> 覆盖）。"
+            )
+        }
+    }
 }
 
 tasks.jar {

@@ -18,7 +18,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = StationaryBerryBushBlock.class, remap = false)
+// priority = 1100：TFE 用 @Overwrite 重写了 onUpdate（默认 priority = 1000），必须让本 mixin
+// 在它之后应用，`@Inject(HEAD)` 才能挂在 TFE 的方法体前面；否则整个方法体会被 TFE 替换、反季节失效。
+@Mixin(value = StationaryBerryBushBlock.class, remap = false, priority = 1100)
 public abstract class TfeStationaryBerryBushBlockMixin
 {
     @Shadow protected abstract boolean mayDie(Level level, BlockPos pos, BlockState state, int monthsSpentDying);

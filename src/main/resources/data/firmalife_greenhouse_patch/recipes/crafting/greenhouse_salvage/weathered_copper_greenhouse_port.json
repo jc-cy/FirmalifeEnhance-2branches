@@ -3,10 +3,10 @@
     "ingredient":  {
                        "item":  "firmalife:weathered_copper_greenhouse_port"
                    },
-    "input_count":  8,
+    "input_count":  1,
     "result":  {
-                   "count":  8,
-                   "id":  "firmalife:weathered_copper_greenhouse_wall"
+                   "count":  1,
+                   "id":  "firmalife:copper_greenhouse_wall"
                },
     "extra_result":  {
                          "count":  1,

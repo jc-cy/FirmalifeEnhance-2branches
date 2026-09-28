@@ -1,0 +1,19 @@
+{
+  "__comment__": "Override Firmalife's 8-output recipe: one wall and one pipe make one port.",
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "XY"
+  ],
+  "key": {
+    "X": {
+      "item": "firmalife:stainless_steel_greenhouse_wall"
+    },
+    "Y": {
+      "item": "firmalife:copper_pipe"
+    }
+  },
+  "result": {
+    "item": "firmalife:stainless_steel_greenhouse_port",
+    "count": 1
+  }
+}

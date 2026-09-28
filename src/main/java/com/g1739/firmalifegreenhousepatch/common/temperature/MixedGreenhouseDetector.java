@@ -117,6 +117,14 @@ public final class MixedGreenhouseDetector
         {
             if (direction == Direction.DOWN)
             {
+                // 贴地植物（浆果丛 / 蔓延丛 / 藤条 / 果树 / 香蕉、耕地作物）不能算作温室"地面墙"：
+                // 向下扫描时若把它们当墙，它们自身就不会被计入温室内部位置集合，
+                // 随后 ClimateStationRegistry 的 positions.contains(pos) 判定就会漏掉这些方块，
+                // 表现为"温室对这类贴地植物不生效、温度显示的还是环境值"。
+                if (isPlantBlock(wallState))
+                {
+                    return false;
+                }
                 return !wallState.isAir();
             }
 
@@ -140,6 +148,12 @@ public final class MixedGreenhouseDetector
                 thermalCounts.merge(thermalRule, 1, Integer::sum);
             }
             return true;
+        }
+
+        private static boolean isPlantBlock(BlockState state)
+        {
+            return state.getBlock() instanceof net.dries007.tfc.common.blocks.plant.fruit.SeasonalPlantBlock
+                || state.getBlock() instanceof net.dries007.tfc.common.blocks.crop.CropBlock;
         }
 
         private boolean isValid()
