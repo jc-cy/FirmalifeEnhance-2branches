@@ -3,18 +3,27 @@ plugins {
 }
 
 val minecraftVersion = "1.21.1"
-val neoForgeVersion = "21.1.197"
+val neoForgeVersion = "21.1.234"
 val parchmentVersion = "2024.11.17"
 val parchmentMinecraftVersion = "1.21.1"
 val patchouliVersion = "1.21.1-92-NEOFORGE"
-val defaultLocalModsDir = "C:/Users/g1739/Desktop/PCL/.minecraft/versions/1.21.1-NeoForge_21.1.222/mods"
-val localModsDir = providers.gradleProperty("localModsDir").orElse(defaultLocalModsDir).get()
-val jeiDevJars = fileTree(localModsDir) {
+// 稳定前置目录：与 1.20 同口径，放在 skill 导航记录的 1.21 前置根目录下，
+// 不再指向会随时变动的 PCL 实例 mods 目录（实例被清理后构建仍可用）。
+val prereqDir = providers.gradleProperty("prereqDir")
+    .orElse("C:/Users/g1739/Desktop/群峦前置源码/1.21/前置jar")
+    .get()
+val jeiDevJars = fileTree("$prereqDir/jei") {
     include("*jei-1.21.1-neoforge-*.jar")
+}
+val tfcLocalJars = fileTree("$prereqDir/tfc") {
+    include("*TerraFirmaCraft-NeoForge-1.21.1-*.jar")
+}
+val firmalifeLocalJars = fileTree("$prereqDir/firmalife") {
+    include("*Firmalife-NeoForge-1.21.1-*.jar")
 }
 
 val modId = "firmalife_greenhouse_patch"
-val modVersion = System.getenv("VERSION") ?: "0.1.4"
+val modVersion = System.getenv("VERSION") ?: "1.0.0"
 val modJavaVersion = "21"
 
 group = "com.g1739.firmalifegreenhousepatch"
@@ -72,11 +81,20 @@ neoForge {
 }
 
 dependencies {
-    compileOnly("curse.maven:terrafirmacraft-302973:7452541")
-    runtimeOnly("curse.maven:terrafirmacraft-302973:7452541")
+    if (tfcLocalJars.isEmpty)
+    {
+        throw GradleException("未找到 TFC 4.2.9 依赖。请把 TerraFirmaCraft-NeoForge-1.21.1-4.2.9.jar 放入 $prereqDir/tfc，或通过 -PprereqDir=<目录> 指定。")
+    }
+    if (firmalifeLocalJars.isEmpty)
+    {
+        throw GradleException("未找到 Firmalife 3.0.14 依赖。请把 Firmalife-NeoForge-1.21.1-3.0.14.jar 放入 $prereqDir/firmalife，或通过 -PprereqDir=<目录> 指定。")
+    }
 
-    compileOnly("curse.maven:firmalife-453394:7790886")
-    runtimeOnly("curse.maven:firmalife-453394:7790886")
+    compileOnly(files(tfcLocalJars))
+    runtimeOnly(files(tfcLocalJars))
+
+    compileOnly(files(firmalifeLocalJars))
+    runtimeOnly(files(firmalifeLocalJars))
 
     compileOnly(jeiDevJars)
 
@@ -96,7 +114,7 @@ tasks.withType<JavaCompile>().configureEach {
     doFirst {
         if (jeiDevJars.isEmpty)
         {
-            throw GradleException("未找到 JEI 开发依赖。请通过 -PlocalModsDir=<你的mods目录> 指向包含 jei-1.21.1-neoforge-*.jar 的目录。")
+            throw GradleException("未找到 JEI 开发依赖。请把 jei-1.21.1-neoforge-*.jar 放入 $prereqDir/jei，或通过 -PprereqDir=<目录> 指定。")
         }
     }
 }

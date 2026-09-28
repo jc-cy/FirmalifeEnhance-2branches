@@ -2,6 +2,7 @@ package com.g1739.firmalifegreenhousepatch.common.temperature;
 
 import com.eerussianguy.firmalife.common.blockentities.ClimateReceiver;
 import com.eerussianguy.firmalife.common.blockentities.ClimateType;
+import com.eerussianguy.firmalife.common.blockentities.FoodShelfBlockEntity;
 import com.eerussianguy.firmalife.common.items.FLFoodTraits;
 import com.g1739.firmalifegreenhousepatch.common.ModFoodTraits;
 import com.g1739.firmalifegreenhousepatch.common.config.PatchConfig;
@@ -23,10 +24,18 @@ import net.dries007.tfc.common.blockentities.InventoryBlockEntity;
 import net.dries007.tfc.common.blockentities.TFCChestBlockEntity;
 import net.dries007.tfc.common.component.food.FoodCapability;
 import net.dries007.tfc.common.component.food.FoodTrait;
+import net.dries007.tfc.common.component.food.FoodTraits;
+import net.dries007.tfc.common.component.mold.Vessel;
 import net.dries007.tfc.util.climate.Climate;
 
 public final class CellarPreservationHelper
 {
+    /**
+     * 总保鲜倍率上限：地窖档位与其它来源（例如 TFC 自带的 PRESERVED）相乘后不得超过该值，
+     * 超过时自动降档。与二代 `群峦现代化生活` 的口径一致。
+     */
+    private static final float MAX_TOTAL_PRESERVATION_MULTIPLIER = 10f;
+
     private static final Set<Holder<FoodTrait>> CELLAR_TRAITS = Set.of(
         FLFoodTraits.SHELVED,
         FLFoodTraits.SHELVED_2,
@@ -132,6 +141,51 @@ public final class CellarPreservationHelper
         final ClimateStationAccess station = ClimateStationRegistry.findControllingCellarStation(level, inventory.getBlockPos());
         final @Nullable Holder<FoodTrait> trait = station != null ? getCellarTrait(level, inventory.getBlockPos()) : null;
         syncInventoryBlockEntity(inventory, trait);
+    }
+
+    /**
+     * 食物架 / 吊架的保鲜档位归一化。Firmalife 上游的 {@code updatePreservation} 在
+     * {@code preserved == true} 时只 {@code applyTrait(新档位)}、不删除旧档位，
+     * 温度档位变化后会叠加（例如同时挂 10x 与 7x，保鲜时间被成倍拉长）。
+     * 这里整体接管该方法：先清掉其它托管档位，再写入当前应生效的档位。
+     */
+    public static void syncFoodShelfBlockEntity(FoodShelfBlockEntity shelf, boolean preserved)
+    {
+        final Level level = shelf.getLevel();
+        if (level == null || level.isClientSide())
+        {
+            return;
+        }
+
+        syncFoodShelfBlockEntity(shelf, preserved ? getCellarTrait(level, shelf.getBlockPos()) : null);
+    }
+
+    private static void syncFoodShelfBlockEntity(FoodShelfBlockEntity shelf, @Nullable Holder<FoodTrait> trait)
+    {
+        if (!SYNCING.add(shelf))
+        {
+            return;
+        }
+
+        boolean changed = false;
+        try
+        {
+            final var internal = shelf.getInventory();
+            for (int slot = 0; slot < internal.getSlots(); slot++)
+            {
+                changed |= normalizeCellarTraits(internal.getStackInSlot(slot), trait);
+            }
+        }
+        finally
+        {
+            SYNCING.remove(shelf);
+        }
+
+        if (changed)
+        {
+            shelf.setChanged();
+            shelf.markForSync();
+        }
     }
 
     public static void syncTFCChestBlockEntity(TFCChestBlockEntity chest)
@@ -375,27 +429,126 @@ public final class CellarPreservationHelper
 
     private static boolean normalizeCellarTraits(ItemStack stack, @Nullable Holder<FoodTrait> trait)
     {
+        return normalizeStackAndNestedContainers(stack, trait, 0);
+    }
+
+    private static boolean normalizeStackAndNestedContainers(ItemStack stack, @Nullable Holder<FoodTrait> trait, int depth)
+    {
+        if (stack.isEmpty())
+        {
+            return false;
+        }
+
+        boolean changed = normalizeFoodStack(stack, trait);
+        if (depth < 2 && isNestedItemContainer(stack))
+        {
+            changed |= normalizeNestedContainerContents(stack, trait, depth + 1);
+        }
+        return changed;
+    }
+
+    private static boolean normalizeFoodStack(ItemStack stack, @Nullable Holder<FoodTrait> trait)
+    {
         if (FoodCapability.get(stack) == null)
         {
             return false;
         }
 
+        final @Nullable Holder<FoodTrait> effectiveTrait = getEffectiveCellarTrait(stack, trait);
         boolean changed = false;
         for (Holder<FoodTrait> possible : CELLAR_TRAITS)
         {
-            if (trait != possible && FoodCapability.hasTrait(stack, possible))
+            if (effectiveTrait != possible && FoodCapability.hasTrait(stack, possible))
             {
                 FoodCapability.removeTrait(stack, possible);
                 changed = true;
             }
         }
 
-        if (trait != null && !FoodCapability.hasTrait(stack, trait))
+        if (effectiveTrait != null && !FoodCapability.hasTrait(stack, effectiveTrait))
         {
-            FoodCapability.applyTrait(stack, trait);
+            FoodCapability.applyTrait(stack, effectiveTrait);
             changed = true;
         }
         return changed;
+    }
+
+    /**
+     * 嵌套容器保鲜：地窖里的箱子里再放可装物品的容器（缸、罐之类）时，
+     * 递归处理其中的食物，避免"外层容器保鲜了、内层食物却不算数"。
+     */
+    private static boolean normalizeNestedContainerContents(ItemStack stack, @Nullable Holder<FoodTrait> trait, int depth)
+    {
+        final @Nullable Vessel vessel = Vessel.get(stack);
+        if (vessel == null || !vessel.isInventory())
+        {
+            return false;
+        }
+
+        boolean changed = false;
+        for (int slot = 0; slot < vessel.getSlots(); slot++)
+        {
+            final ItemStack contained = vessel.getStackInSlot(slot);
+            if (contained.isEmpty())
+            {
+                continue;
+            }
+            if (normalizeStackAndNestedContainers(contained, trait, depth))
+            {
+                vessel.setStackInSlot(slot, contained);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private static boolean isNestedItemContainer(ItemStack stack)
+    {
+        final @Nullable Vessel vessel = Vessel.get(stack);
+        return vessel != null && vessel.isInventory();
+    }
+
+    /**
+     * 按"总倍率不超过 {@link #MAX_TOTAL_PRESERVATION_MULTIPLIER}"折算实际应生效的地窖档位。
+     */
+    @Nullable
+    private static Holder<FoodTrait> getEffectiveCellarTrait(ItemStack stack, @Nullable Holder<FoodTrait> trait)
+    {
+        if (trait == null)
+        {
+            return null;
+        }
+        final float existingMultiplier = getExistingContainerPreservationMultiplier(stack);
+        if (!Float.isFinite(existingMultiplier) || existingMultiplier >= MAX_TOTAL_PRESERVATION_MULTIPLIER)
+        {
+            return null;
+        }
+        final float allowedCellarMultiplier = MAX_TOTAL_PRESERVATION_MULTIPLIER / existingMultiplier;
+        final float desiredMultiplier = Math.min(getTraitMultiplier(trait.value()), allowedCellarMultiplier);
+        return getCellarTraitAtMost(desiredMultiplier);
+    }
+
+    private static float getExistingContainerPreservationMultiplier(ItemStack stack)
+    {
+        return FoodCapability.hasTrait(stack, FoodTraits.PRESERVED) ? getTraitMultiplier(FoodTraits.PRESERVED.value()) : 1f;
+    }
+
+    private static float getTraitMultiplier(FoodTrait trait)
+    {
+        final float decayModifier = trait.getDecayModifier();
+        return decayModifier <= 0f ? Float.POSITIVE_INFINITY : 1f / decayModifier;
+    }
+
+    private static Holder<FoodTrait> getCellarTraitAtMost(float multiplier)
+    {
+        for (DeferredHolder<FoodTrait, FoodTrait> candidate : ModFoodTraits.getCellarTraits())
+        {
+            if (getTraitMultiplier(candidate.value()) <= multiplier)
+            {
+                return candidate;
+            }
+        }
+        return ModFoodTraits.getDefaultCellarTrait();
     }
 
     private static void removeCellarTraits(ItemStack stack)

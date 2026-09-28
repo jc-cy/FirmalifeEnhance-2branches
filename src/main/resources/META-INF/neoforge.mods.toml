@@ -7,59 +7,345 @@ modId = "firmalife_greenhouse_patch"
 version = "${file.jarVersion}"
 displayName = "温室地窖重置-Firmalife Enhance"
 authors = "交错次元"
-description = '''独立的 TFC + Firmalife 兼容补丁。
-提供温室与地窖的气象站控温、常见容器与 IE 木制储物箱 / 强化储物箱地窖兼容，以及温室建材拆解配方。
-本版本新增大量配置项目，支持自定义热源/冷源、混合温室、配置化地窖墙体与温室/地窖墙体规则。
-1.21 版本不包含 TFE 依赖；1.20 的 TFE 兼容内容在 1.21 中改接原生 TFC / Firmalife 内容。
+description = '''Firmalife 增强
 
-中文声明
-本模组采用 ARR 协议。
-仅允许作者未修改发布版免费用于个人、非商业、合法正常的游戏使用。
-未经作者事先书面许可，禁止二次分发、整合打包、修改后二次发布、商业使用或 AI 训练。
-源码默认不公开；在同意随附声明并取得作者明确同意后，可向作者申请获取部分或全部源码。
-本模组包含 AI 生成或 AI 辅助内容；如不接受，请立即禁用或删除本模组。
-完整条款详见随附 LICENSE 与 DISCLAIMER。
-本声明及后续协议仅限制别有用心的人和反对AI编程并带节奏的人群，如无恶意，可以放宽全部要求并提供源码.
+注:本mod属于早期一代版本，功能简单，后续不再拓展功能且只维护版本更新后导致的不兼容，推荐使用二代版本：群峦现代化生活/TFCModernLife 二代内容更为完整和平衡。
+如安装了<群峦现代化生活/TFCModernLife>需禁用本mod，不可与二代同时启用。
 
-Standalone TFC + Firmalife compatibility patch.
-This version provides climate-station temperature control for greenhouses and cellars, common container and Immersive Engineering wooden/reinforced crate cellar compatibility, and greenhouse material salvage recipes.
-It also adds extensive configuration options, including custom heating/cooling items, mixed greenhouses, configurable cellar walls, and greenhouse/cellar wall rules.
-The 1.21 build does not depend on TFE; features that required TFE compatibility on 1.20 are handled through native TFC / Firmalife content on 1.21.
+面向Firmalife 的增强补丁。
 
-English Notice
-This mod is distributed under ARR.
-Only the author's unmodified release may be used for free for personal, non-commercial, lawful, ordinary gameplay.
-No redistribution, repacks, modified re-releases, commercial use, or AI training without the author's prior written permission.
-Source code is not public by default; if you agree to the bundled terms and obtain the author's explicit consent, you may request access to some or all of the source code.
-This mod contains AI-generated or AI-assisted content; disable or remove it if you do not want such content.
-See the bundled LICENSE and DISCLAIMER for the full terms.
-This notice and the follow-up terms are mainly intended to restrict bad-faith actors and people who oppose AI programming while deliberately stirring up trouble; if there is no malicious intent, the author may relax all requirements and provide source code.'''
+本补丁主要强化了以下几个方向：
+
+• 温室内普通耕地恒温
+• 温室作物无视季节限制继续生长
+• 果树、浆果灌木、葡萄、香蕉、蜂箱等纳入温室效果
+• 气象站新增可视化温控界面
+• 地窖接入气象站控温，并根据温度动态提升保鲜倍率
+• 常见地窖容器同步享受保鲜效果
+• 新增温室建材拆解配方
+
+二、温室系统重做
+1. 普通耕地也能恒温
+
+原版 Firmalife 中，气象站启用后，通常只会让部分花盆、架盆等种植结构吃到温室效果，
+而温室内部的普通土地/耕地并不会真正跟随气象站控温。
+
+启用本mod后当气象站生效时,温室将变为真正的温室，
+温室范围内的普通耕地也会获得恒温效果
+作物判断温度时会读取气象站设置后的目标温度
+
+2. 温室作物无视季节继续生长
+
+补丁额外重做了温室内的作物成长逻辑。
+只要作物处于有效温室范围内，就不会再被季节限制卡住。
+
+• 不需要等合适月份
+• 不会因为当前季节不对而停滞
+• 只要温度条件满足，就可以继续生长和成熟
+温室真正具备了反季节种植。
+
+3. 温室兼容范围扩大
+除了普通耕地作物外，本补丁还把更多原本不完整吃温室效果的内容纳入了温室恒温逻辑，包括：
+
+普通农作物/果树/果树树苗/葡萄/香蕉/浆果灌木/蜂箱 / 蜂巢 / 野生蜂巢相关逻辑
+
+三、气象站温控系统重做
+1. 新增独立温控界面，现在可以通过以<下蹲 + 空手 + 右键气象站>打开气象站编辑界面：
+
+包含
+• 当前环境平均温度
+• 当前生效温度
+• 当前允许调节范围
+• 当前结构倍率
+• 当前升温/降温能力
+• 地窖模式下的当前保鲜倍率
+
+2. 以环境平均温度为基准控温
+
+气象站现在不是简单地“直接设置一个绝对值”，
+而是以当前环境平均温度为基准，再根据结构等级和投入材料决定可调上下限。
+
+即
+• 不同地方的基础气候不同
+• 气象站是在当前环境基础上进行加热或降温
+• 最终能调到多少，取决于温室等级和材料投入
+
+3. 不同等级温室拥有不同基础倍率
+
+不同材质/等级的温室，默认拥有不同的控温强度：
+
+• 木质温室：5 倍
+• 铜温室：10 倍
+• 铁温室：15 倍
+• 钢温室：20 倍
+• 不锈钢温室：25 倍
+
+等级越高，可调温范围越大。
+
+4. 气象站新增升温/降温材料槽
+
+气象站新增了两个专用格子：
+
+• 升温槽：放入岩浆块
+• 降温槽：放入冰、浮冰、蓝冰
+
+只有放入对应方块，气象站才拥有对应方向的控温能力。
+
+5. 升温/降温计算规则
+
+气象站可调温度由“材料基础值 × 当前温室倍率”决定。
+
+升温
+• 岩浆块：每个提供 0.1 × 温室倍率
+降温
+• 普通冰：每个提供 0.01 × 温室倍率
+• 浮冰：每个提供 0.1 × 温室倍率
+• 蓝冰：每个提供 1.0 × 温室倍率
+
+例如：如果当前是不锈钢温室（25 倍）：
+
+• 1 个岩浆块 = +2.5°C
+• 10 个岩浆块 = +25°C
+• 1 个蓝冰 = -25°C
+• 1 个浮冰 = -2.5°C
+• 1 个普通冰 = -0.25°C
+
+6. 默认检测范围扩大
+
+气象站的温室/地窖检测范围做了增强：
+默认检测半径为原本的2倍。
+
+四、地窖系统增强
+1. 气象站现在也能控制地窖温度和保鲜。地窖保鲜倍率改为动态计算
+
+当前规则如下：
+
+• >= 0°C：2.5 倍保鲜
+• < 0°C：3 倍保鲜
+• <= -12°C：4 倍保鲜
+• <= -15°C：5 倍保鲜
+• <= -18°C：6 倍保鲜
+• <= -21°C：7 倍保鲜
+• <= -24°C：8 倍保鲜
+
+3. 地窖基础控温倍率，默认倍率为：
+10 倍控温
+升温降温区间范围计算类似铜温室的数值范围。
+
+五、地窖容器兼容
+1. 常见容器可享受地窖保鲜
+
+目前重点兼容的内容包括：
+
+• 各类 TFC 箱子
+• 各种木箱 / 颜色箱子的相关变体
+• 常见基于 InventoryBlockEntity 的容器
+• 大部分常见大缸类容器
+• 食品架
+• 挂架
+
+2.容器内物品会自动同步保鲜 trait,避免“拿出来后仍永久保鲜”或者“容器里不生效”的问题，增加了完整的同步逻辑：
+
+• 物品放进受地窖影响的容器时，会自动附加当前地窖保鲜效果
+• 物品从容器取出时，会自动移除地窖专用 trait
+• 如果地窖温度变化，容器内物品的保鲜倍率也会同步更新
+
+六、温室建材拆解配方
+1. 新增工作台拆解功能,玩家可以在工作台中使用：
+
+宝石锯和成品温室建材全额拆解出原材料。
+宝石锯只掉耐久，不会被消耗
+
+当前已覆盖多种温室结构件，包括：
+
+• 温室墙/面板墙/面板顶/普通顶/顶盖/活板门/门/端口
+
+支持的材质层级也包含多种原版温室变体，如：
+
+• 木质/风化木质/铜/氧化铜 / 风化铜 / 裸露铜/铁 / 锈铁/不锈钢
+
+Firmalife Enhance
+
+Note: this mod is an early first-generation build with a simple feature set. It will not receive new features anymore and only maintains compatibility fixes caused by upstream updates. The second-generation version is recommended: 群峦现代化生活 / TFCModernLife, which is more complete and better balanced.
+If 群峦现代化生活 / TFCModernLife is installed, this mod must be disabled - the two cannot be enabled at the same time.
+
+An enhancement patch for Firmalife.
+
+This patch mainly strengthens the following areas:
+
+• Ordinary farmland inside a greenhouse stays at a constant temperature
+• Greenhouse crops ignore season limits and keep growing
+• Fruit trees, berry bushes, grapes, bananas, beehives and similar are brought into the greenhouse effect
+• The climate station gains a visual temperature-control screen
+• Cellars are connected to climate-station control and dynamically raise their preservation multiplier based on temperature
+• Common cellar containers receive the preservation effect as well
+• Adds greenhouse material salvage recipes
+
+II. Greenhouse system rework
+1. Ordinary farmland also stays at a constant temperature
+
+In vanilla Firmalife, after the climate station is enabled, usually only some planter-type structures benefit from the greenhouse effect, while ordinary dirt / farmland inside the greenhouse does not actually follow the climate station.
+
+With this mod, once the climate station is active the greenhouse becomes a real greenhouse: ordinary farmland inside its range also receives the constant-temperature effect, and crops read the target temperature set on the climate station when checking temperature.
+
+2. Greenhouse crops ignore seasons and keep growing
+
+The patch additionally reworks crop growth inside greenhouses. As long as a crop is inside a valid greenhouse area, it is no longer blocked by the season.
+
+• No need to wait for a suitable month
+• No stalling because the current season does not match
+• As long as the temperature requirement is met, growth and ripening continue
+
+The greenhouse now truly supports off-season planting.
+
+3. Wider greenhouse compatibility
+
+Besides ordinary farmland crops, this patch also brings content that previously did not fully benefit from greenhouses into the greenhouse constant-temperature logic, including:
+
+Ordinary crops / fruit trees / fruit tree saplings / grapes / bananas / berry bushes / beehives / hives / wild hives and related logic
+
+III. Climate station temperature-control system rework
+1. A new dedicated temperature-control screen. It can now be opened by <sneaking + empty hand + right-clicking the climate station>. It shows:
+
+• Current average ambient temperature
+• Currently effective temperature
+• Current adjustable range
+• Current structure multiplier
+• Current heating / cooling capability
+• Current preservation multiplier in cellar mode
+
+2. Temperature control is based on the average ambient temperature
+
+The climate station no longer simply "sets an absolute value". It uses the current average ambient temperature as the baseline and then derives the adjustable upper and lower limits from the structure tier and the materials inserted.
+
+That means:
+
+• The base climate differs from place to place
+• The climate station heats or cools relative to the current environment
+• How far it can act depends on the greenhouse tier and the materials used
+
+3. Different greenhouse tiers have different base multipliers
+
+By default:
+
+• Treated wood greenhouse: 5x
+• Copper greenhouse: 10x
+• Iron greenhouse: 15x
+• Steel greenhouse: 20x
+• Stainless steel greenhouse: 25x
+
+The higher the tier, the wider the adjustable range.
+
+4. New heating / cooling material slots
+
+The climate station gains two dedicated slots:
+
+• Heating slot: put in magma blocks
+• Cooling slot: put in ice, packed ice, blue ice
+
+Only with the matching blocks inserted does the climate station gain control in that direction.
+
+5. Heating / cooling calculation rules
+
+The adjustable temperature is determined by "material base value x current greenhouse multiplier".
+
+Heating:
+• Magma block: 0.1 x greenhouse multiplier each
+
+Cooling:
+• Ice: 0.01 x greenhouse multiplier each
+• Packed ice: 0.1 x greenhouse multiplier each
+• Blue ice: 1.0 x greenhouse multiplier each
+
+Example with a stainless steel greenhouse (25x):
+
+• 1 magma block = +2.5°C
+• 10 magma blocks = +25°C
+• 1 blue ice = -25°C
+• 1 packed ice = -2.5°C
+• 1 ice = -0.25°C
+
+6. Larger default detection range
+
+Greenhouse / cellar detection was enhanced: the default detection radius is twice the original.
+
+IV. Cellar system enhancements
+1. The climate station can now also control cellar temperature and preservation. The cellar preservation multiplier is now calculated dynamically.
+
+Current rules:
+
+• >= 0°C: 2.5x preservation
+• < 0°C: 3x preservation
+• <= -12°C: 4x preservation
+• <= -15°C: 5x preservation
+• <= -18°C: 6x preservation
+• <= -21°C: 7x preservation
+• <= -24°C: 8x preservation
+
+3. Base cellar control multiplier, default:
+
+10x control
+The heating / cooling range is calculated similarly to the copper greenhouse values.
+
+V. Cellar container compatibility
+1. Common containers receive cellar preservation
+
+Currently the main supported containers include:
+
+• TFC chests of all kinds
+• Wooden crates / colored crate variants
+• Common containers based on InventoryBlockEntity
+• Most common large vessel containers
+• Food shelves
+• Hangers
+
+2. Items inside containers have their preservation traits synchronized automatically, avoiding both "it stays preserved forever after being taken out" and "it does not work inside the container". The complete synchronization logic is included:
+
+• Placing an item into a cellar-affected container automatically applies the current cellar preservation effect
+• Taking an item out of the container automatically removes the cellar-specific trait
+• If the cellar temperature changes, the preservation multiplier of items inside is updated accordingly
+
+VI. Greenhouse material salvage recipes
+1. New crafting-table salvage. Players can use:
+
+A gem saw together with finished greenhouse materials to fully salvage them back into raw materials.
+The gem saw only loses durability and is never consumed.
+
+Currently covered greenhouse parts include:
+
+• Greenhouse wall / panel wall / panel roof / roof / roof top / trapdoor / door / port
+
+Supported material tiers also cover many vanilla greenhouse variants, such as:
+
+• Treated wood / weathered treated wood / copper / oxidized copper / weathered copper / exposed copper / iron / rusted iron / stainless steel
+
+See the bundled LICENSE and DISCLAIMER (packed into the jar under META-INF) for the full terms.'''
 
 [[dependencies.firmalife_greenhouse_patch]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21,)"
+versionRange = "[21.1.234,)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.firmalife_greenhouse_patch]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21,)"
+versionRange = "[1.21.1,1.22)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.firmalife_greenhouse_patch]]
 modId = "tfc"
 type = "required"
-versionRange = "[0,)"
+versionRange = "[4.2.9,)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.firmalife_greenhouse_patch]]
 modId = "firmalife"
 type = "required"
-versionRange = "[0,)"
+versionRange = "[3.0.14,)"
 ordering = "AFTER"
 side = "BOTH"
 

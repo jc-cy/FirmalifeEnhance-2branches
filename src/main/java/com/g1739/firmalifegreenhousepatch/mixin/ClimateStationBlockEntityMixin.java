@@ -3,7 +3,6 @@ package com.g1739.firmalifegreenhousepatch.mixin;
 import com.eerussianguy.firmalife.common.blockentities.ClimateStationBlockEntity;
 import com.eerussianguy.firmalife.common.blockentities.ClimateReceiver;
 import com.eerussianguy.firmalife.common.blockentities.ClimateType;
-import com.eerussianguy.firmalife.common.util.GreenhouseType;
 import com.g1739.firmalifegreenhousepatch.common.config.PatchConfig;
 import com.g1739.firmalifegreenhousepatch.common.temperature.CellarPreservationHelper;
 import com.g1739.firmalifegreenhousepatch.common.temperature.ClimateStationAccess;
@@ -40,7 +39,7 @@ public abstract class ClimateStationBlockEntityMixin implements ClimateStationAc
 
     @Shadow
     @Nullable
-    private GreenhouseType favoriteGreenhouseType;
+    private ResourceLocation favoriteGreenhouseType;
 
     @Shadow
     private boolean favoriteIsCellar;
@@ -281,8 +280,7 @@ public abstract class ClimateStationBlockEntityMixin implements ClimateStationAc
     @Override
     public boolean flgp$isStainlessGreenhouse()
     {
-        final ResourceLocation id = favoriteGreenhouseType == null ? null : GreenhouseType.MANAGER.getId(favoriteGreenhouseType);
-        return id != null && id.getPath().contains("stainless_steel");
+        return favoriteGreenhouseType != null && favoriteGreenhouseType.getPath().contains("stainless_steel");
     }
 
     @Override

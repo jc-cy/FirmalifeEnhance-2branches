@@ -1,0 +1,20 @@
+{
+  "__comment__": "1.20 baseline override: one greenhouse wall and one copper pipe make one port.",
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XY"
+  ],
+  "key": {
+    "X": {
+      "item": "firmalife:iron_greenhouse_wall"
+    },
+    "Y": {
+      "item": "firmalife:copper_pipe"
+    }
+  },
+  "result": {
+    "id": "firmalife:iron_greenhouse_port",
+    "count": 1
+  }
+}

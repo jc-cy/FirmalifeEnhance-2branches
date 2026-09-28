@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import net.dries007.tfc.util.Helpers;
+import net.dries007.tfc.common.blocks.soil.HoeOverlayBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -37,8 +38,47 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(com.eerussianguy.firmalife.common.blocks.greenhouse.ClimateStationBlock.class)
-public abstract class ClimateStationBlockMixin
+public abstract class ClimateStationBlockMixin implements HoeOverlayBlock
 {
+    // Firmalife 3.0.14 的 ClimateStationBlock 不再实现 HoeOverlayBlock（上游只留下了未使用的 import），
+    // 导致 TFC 的锄头浮层不再对气象站生效。这里由补丁把接口补回目标类，保持与 2.x 一致的气象站温度浮层。
+    @Override
+    public void addHoeOverlayInfo(Level level, BlockPos pos, BlockState state, Consumer<Component> tooltip, boolean debug)
+    {
+        if (level.getBlockEntity(pos) instanceof ClimateStationBlockEntity blockEntity && blockEntity instanceof ClimateStationAccess station)
+        {
+            if (!ClimateStationRegistry.isActiveStation(blockEntity, station))
+            {
+                tooltip.accept(Component.translatable("screen.firmalife_greenhouse_patch.inactive"));
+                return;
+            }
+            tooltip.accept(Component.translatable("firmalife_greenhouse_patch.tooltip.current_effective_temperature", station.flgp$getTargetTemperature()));
+            if (station.flgp$getClimateType() == ClimateType.CELLAR)
+            {
+                tooltip.accept(Component.translatable(
+                    "firmalife_greenhouse_patch.tooltip.current_preservation",
+                    GreenhouseTemperatureHelper.formatFactor(CellarPreservationHelper.getCellarPreservationMultiplier(level, pos)),
+                    CellarPreservationHelper.getCellarDecayPercent(level, pos)
+                ));
+            }
+            tooltip.accept(Component.translatable(
+                "firmalife_greenhouse_patch.tooltip.temperature_range",
+                GreenhouseTemperatureHelper.getAmbientTemperature(level, pos),
+                GreenhouseTemperatureHelper.getMinAllowedTemperature(level, pos, station),
+                GreenhouseTemperatureHelper.getMaxAllowedTemperature(level, pos, station)
+            ));
+            tooltip.accept(Component.translatable(
+                "firmalife_greenhouse_patch.tooltip.heating_items",
+                GreenhouseTemperatureHelper.getDisplayedMaxTemperatureLimit(station)
+            ));
+            tooltip.accept(Component.translatable(
+                "firmalife_greenhouse_patch.tooltip.cooling_items",
+                GreenhouseTemperatureHelper.getDisplayedMinTemperatureLimit(station)
+            ));
+            tooltip.accept(Component.translatable("firmalife_greenhouse_patch.tooltip.open_menu"));
+        }
+    }
+
     @Inject(method = "check", at = @At("HEAD"), cancellable = true, require = 0)
     private static void flgp$replaceClimateCheck(Level level, BlockPos pos, BlockState state, CallbackInfoReturnable<Either<Mechanics.GreenhouseInfo, Set<BlockPos>>> cir)
     {
@@ -119,43 +159,6 @@ public abstract class ClimateStationBlockMixin
         }
 
         cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
-    }
-
-    @Inject(method = "addHoeOverlayInfo", at = @At("TAIL"))
-    private void flgp$addTemperatureTooltip(Level level, BlockPos pos, BlockState state, Consumer<Component> tooltip, boolean debug, CallbackInfo ci)
-    {
-        if (level.getBlockEntity(pos) instanceof ClimateStationBlockEntity blockEntity && blockEntity instanceof ClimateStationAccess station)
-        {
-            if (!ClimateStationRegistry.isActiveStation(blockEntity, station))
-            {
-                tooltip.accept(Component.translatable("screen.firmalife_greenhouse_patch.inactive"));
-                return;
-            }
-            tooltip.accept(Component.translatable("firmalife_greenhouse_patch.tooltip.current_effective_temperature", station.flgp$getTargetTemperature()));
-            if (station.flgp$getClimateType() == ClimateType.CELLAR)
-            {
-                tooltip.accept(Component.translatable(
-                    "firmalife_greenhouse_patch.tooltip.current_preservation",
-                    GreenhouseTemperatureHelper.formatFactor(CellarPreservationHelper.getCellarPreservationMultiplier(level, pos)),
-                    CellarPreservationHelper.getCellarDecayPercent(level, pos)
-                ));
-            }
-            tooltip.accept(Component.translatable(
-                "firmalife_greenhouse_patch.tooltip.temperature_range",
-                GreenhouseTemperatureHelper.getAmbientTemperature(level, pos),
-                GreenhouseTemperatureHelper.getMinAllowedTemperature(level, pos, station),
-                GreenhouseTemperatureHelper.getMaxAllowedTemperature(level, pos, station)
-            ));
-            tooltip.accept(Component.translatable(
-                "firmalife_greenhouse_patch.tooltip.heating_items",
-                GreenhouseTemperatureHelper.getDisplayedMaxTemperatureLimit(station)
-            ));
-            tooltip.accept(Component.translatable(
-                "firmalife_greenhouse_patch.tooltip.cooling_items",
-                GreenhouseTemperatureHelper.getDisplayedMinTemperatureLimit(station)
-            ));
-            tooltip.accept(Component.translatable("firmalife_greenhouse_patch.tooltip.open_menu"));
-        }
     }
 
     @Inject(method = "onRemove", at = @At("HEAD"))

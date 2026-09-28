@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import net.dries007.tfc.common.component.food.FoodTrait;
 import java.util.Set;
@@ -31,6 +32,15 @@ public abstract class FoodShelfBlockEntityMixin
     private void flgp$useAllCellarTraits(CallbackInfoReturnable<Set<DeferredHolder<FoodTrait, FoodTrait>>> cir)
     {
         cir.setReturnValue(CellarPreservationHelper.getPossibleTraits());
+    }
+
+    // 整体接管 Firmalife 的 updatePreservation：上游在 preserved=true 时只添加新档位、不清理旧档位，
+    // 温度变化后会出现档位叠加（保鲜时间被成倍拉长）。这里改为先归一化再应用。
+    @Inject(method = "updatePreservation", at = @At("HEAD"), cancellable = true, require = 0)
+    private void flgp$normalizeShelfPreservation(boolean preserved, CallbackInfo ci)
+    {
+        CellarPreservationHelper.syncFoodShelfBlockEntity((FoodShelfBlockEntity) (Object) this, preserved);
+        ci.cancel();
     }
 
     @Redirect(
