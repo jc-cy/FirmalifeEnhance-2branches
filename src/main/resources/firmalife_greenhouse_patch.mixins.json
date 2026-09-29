@@ -10,6 +10,7 @@
     "BaseBeehiveBlockMixin",
     "BananaPlantBlockMixin",
     "CallbackSlotMixin",
+    "CellarChestBlockEntityMixin",
     "ClimateStationBlockEntityMixin",
     "ClimateStationBlockMixin",
     "CompoundContainerMixin",
