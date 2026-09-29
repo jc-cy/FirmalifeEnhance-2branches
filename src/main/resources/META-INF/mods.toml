@@ -318,8 +318,7 @@ Currently covered greenhouse parts include:
 Supported material tiers also cover many vanilla greenhouse variants, such as:
 
 • Treated wood / weathered treated wood / copper / oxidized copper / weathered copper / exposed copper / iron / rusted iron / stainless steel
-
-See the bundled LICENSE and DISCLAIMER (packed into the jar under META-INF) for the full terms.'''
+'''
 
 
 [[dependencies.firmalife_greenhouse_patch]]
