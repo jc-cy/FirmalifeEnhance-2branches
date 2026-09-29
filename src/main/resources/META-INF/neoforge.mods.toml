@@ -137,7 +137,7 @@ description = '''Firmalife 增强
 
 目前重点兼容的内容包括：
 
-• 各类 TFC 箱子
+• 原版和各类 TFC 箱子
 • 各种木箱 / 颜色箱子的相关变体
 • 常见基于 InventoryBlockEntity 的容器
 • 大部分常见大缸类容器
@@ -292,7 +292,7 @@ V. Cellar container compatibility
 
 Currently the main supported containers include:
 
-• TFC chests of all kinds
+• Vanilla and TFC chests of all kinds
 • Wooden crates / colored crate variants
 • Common containers based on InventoryBlockEntity
 • Most common large vessel containers

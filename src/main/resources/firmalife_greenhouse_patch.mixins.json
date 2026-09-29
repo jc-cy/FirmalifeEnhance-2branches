@@ -11,6 +11,7 @@
     "BeeComponentMixin",
     "BananaPlantBlockMixin",
     "CallbackSlotMixin",
+    "CellarChestBlockEntityMixin",
     "ClimateStationBlockEntityMixin",
     "ClimateStationBlockMixin",
     "CompoundContainerMixin",

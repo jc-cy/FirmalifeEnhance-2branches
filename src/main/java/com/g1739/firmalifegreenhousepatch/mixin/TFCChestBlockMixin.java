@@ -1,7 +1,7 @@
 package com.g1739.firmalifegreenhousepatch.mixin;
 
 import com.g1739.firmalifegreenhousepatch.common.temperature.CellarPreservationHelper;
-import net.dries007.tfc.common.blockentities.TFCChestBlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,7 +20,7 @@ public abstract class TFCChestBlockMixin
         {
             return;
         }
-        if (level.getBlockEntity(pos) instanceof TFCChestBlockEntity chest)
+        if (level.getBlockEntity(pos) instanceof ChestBlockEntity chest)
         {
             CellarPreservationHelper.sanitizeChestForDrop(chest);
         }

@@ -14,14 +14,17 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.Container;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.jetbrains.annotations.Nullable;
 import net.dries007.tfc.common.blockentities.InventoryBlockEntity;
-import net.dries007.tfc.common.blockentities.TFCChestBlockEntity;
+import net.dries007.tfc.common.blockentities.TFCBlockEntity;
 import net.dries007.tfc.common.component.food.FoodCapability;
 import net.dries007.tfc.common.component.food.FoodTrait;
 import net.dries007.tfc.common.component.food.FoodTraits;
@@ -111,13 +114,17 @@ public final class CellarPreservationHelper
         }
 
         final BlockEntity target = level.getBlockEntity(pos);
-        if (target instanceof InventoryBlockEntity<?> inventory && shouldHandleInventory(inventory))
+        if (target instanceof FoodShelfBlockEntity shelf)
+        {
+            syncFoodShelfBlockEntity(shelf, true);
+        }
+        else if (target instanceof InventoryBlockEntity<?> inventory && shouldHandleInventory(inventory))
         {
             syncInventoryBlockEntity(inventory);
         }
-        else if (target instanceof TFCChestBlockEntity chest)
+        else if (target instanceof ChestBlockEntity chest)
         {
-            syncTFCChestBlockEntity(chest);
+            syncChestBlockEntity(chest);
         }
         else if (target instanceof Container container && shouldHandleExternalContainer(target))
         {
@@ -157,7 +164,8 @@ public final class CellarPreservationHelper
             return;
         }
 
-        syncFoodShelfBlockEntity(shelf, preserved ? getCellarTrait(level, shelf.getBlockPos()) : null);
+        final ClimateStationAccess station = ClimateStationRegistry.findControllingCellarStation(level, shelf.getBlockPos());
+        syncFoodShelfBlockEntity(shelf, preserved && station != null ? getCellarTrait(level, shelf.getBlockPos()) : null);
     }
 
     private static void syncFoodShelfBlockEntity(FoodShelfBlockEntity shelf, @Nullable Holder<FoodTrait> trait)
@@ -183,12 +191,11 @@ public final class CellarPreservationHelper
 
         if (changed)
         {
-            shelf.setChanged();
             shelf.markForSync();
         }
     }
 
-    public static void syncTFCChestBlockEntity(TFCChestBlockEntity chest)
+    public static void syncChestBlockEntity(ChestBlockEntity chest)
     {
         final Level level = chest.getLevel();
         if (level == null || level.isClientSide())
@@ -198,7 +205,7 @@ public final class CellarPreservationHelper
 
         final ClimateStationAccess station = ClimateStationRegistry.findControllingCellarStation(level, chest.getBlockPos());
         final @Nullable Holder<FoodTrait> trait = station != null ? getCellarTrait(level, chest.getBlockPos()) : null;
-        syncTFCChestBlockEntity(chest, trait);
+        syncChestBlockEntity(chest, trait);
     }
 
     public static void syncExternalContainer(Container container)
@@ -242,6 +249,37 @@ public final class CellarPreservationHelper
         return stack;
     }
 
+    public static boolean isActiveCellarChest(BlockEntity chest)
+    {
+        final Level level = chest.getLevel();
+        return level != null && !level.isClientSide()
+            && ClimateStationRegistry.findControllingCellarStation(level, chest.getBlockPos()) != null;
+    }
+
+    /**
+     * 自动化（漏斗 / 管道）把物品放进地窖箱子前，套上当前档位。
+     */
+    public static ItemStack tagInsertedStack(BlockEntity chest, ItemStack stack)
+    {
+        if (!stack.isEmpty() && isActiveCellarChest(chest))
+        {
+            normalizeCellarTraits(stack, getCellarTrait(chest.getLevel(), chest.getBlockPos()));
+        }
+        return stack;
+    }
+
+    /**
+     * 从地窖箱子取出的物品剥掉档位，避免保鲜倍率跟着离开地窖。
+     */
+    public static ItemStack sanitizeExtractedStack(BlockEntity chest, ItemStack stack)
+    {
+        if (!stack.isEmpty() && isActiveCellarChest(chest))
+        {
+            removeCellarTraits(stack);
+        }
+        return stack;
+    }
+
     public static void sanitizeInventoryForDrop(InventoryBlockEntity<?> inventory)
     {
         if (!shouldHandleInventory(inventory))
@@ -269,11 +307,11 @@ public final class CellarPreservationHelper
 
         if (changed)
         {
-            inventory.setChanged();
+            markChanged(inventory);
         }
     }
 
-    public static void sanitizeChestForDrop(TFCChestBlockEntity chest)
+    public static void sanitizeChestForDrop(ChestBlockEntity chest)
     {
         sanitizeContainerForDrop(chest, chest);
     }
@@ -289,13 +327,31 @@ public final class CellarPreservationHelper
         {
             return handler;
         }
+        return wrapCellarHandler(inventory, handler);
+    }
+
+    /**
+     * IE 储物箱在 1.21 走 {@code getInventoryCap()} 暴露物品能力，这里套上地窖包装，
+     * 使管道 / 自动化插入也带上档位、取出时被剥掉。
+     */
+    public static IItemHandler wrapBlockEntityItemHandler(BlockEntity owner, @Nullable IItemHandler handler)
+    {
+        if (handler == null || !shouldHandleExternalContainer(owner))
+        {
+            return handler;
+        }
+        return wrapCellarHandler(owner, handler);
+    }
+
+    private static IItemHandler wrapCellarHandler(BlockEntity owner, IItemHandler handler)
+    {
         if (handler instanceof CellarInventoryWrapper || handler instanceof CellarInventoryModifiableWrapper)
         {
             return handler;
         }
         return handler instanceof IItemHandlerModifiable modifiable
-            ? new CellarInventoryModifiableWrapper(inventory, modifiable)
-            : new CellarInventoryWrapper(inventory, handler);
+            ? new CellarInventoryModifiableWrapper(owner, modifiable)
+            : new CellarInventoryWrapper(owner, handler);
     }
 
     public static Holder<FoodTrait> getCellarTrait(Level level, BlockPos pos)
@@ -374,21 +430,34 @@ public final class CellarPreservationHelper
         }
     }
 
-    private static void syncTFCChestBlockEntity(TFCChestBlockEntity chest, @Nullable Holder<FoodTrait> trait)
+    private static void syncChestBlockEntity(ChestBlockEntity chest, @Nullable Holder<FoodTrait> trait)
     {
         syncContainer(chest, chest, trait);
+        final var state = chest.getBlockState();
+        if (state.getValue(ChestBlock.TYPE) != ChestType.SINGLE)
+        {
+            final BlockEntity partner = chest.getLevel().getBlockEntity(chest.getBlockPos().relative(ChestBlock.getConnectedDirection(state)));
+            if (partner instanceof ChestBlockEntity other)
+            {
+                syncContainer(other, other, trait);
+            }
+        }
     }
 
     private static void syncBlockEntity(Level level, BlockPos pos, @Nullable Holder<FoodTrait> trait)
     {
         final BlockEntity target = level.getBlockEntity(pos);
-        if (target instanceof InventoryBlockEntity<?> inventory && shouldHandleInventory(inventory))
+        if (target instanceof FoodShelfBlockEntity shelf)
+        {
+            syncFoodShelfBlockEntity(shelf, trait);
+        }
+        else if (target instanceof InventoryBlockEntity<?> inventory && shouldHandleInventory(inventory))
         {
             syncInventoryBlockEntity(inventory, trait);
         }
-        else if (target instanceof TFCChestBlockEntity chest)
+        else if (target instanceof ChestBlockEntity chest)
         {
-            syncTFCChestBlockEntity(chest, trait);
+            syncChestBlockEntity(chest, trait);
         }
         else if (target instanceof Container container && shouldHandleExternalContainer(target))
         {
@@ -421,7 +490,22 @@ public final class CellarPreservationHelper
             SYNCING.remove(owner);
         }
 
-        if (changed && owner instanceof BlockEntity blockEntity)
+        if (changed)
+        {
+            markChanged(owner);
+        }
+    }
+
+    /**
+     * 内容改写后通知客户端：TFC 方块实体走 markForSync（内部会 setChanged），原版箱子这类只有 setChanged。
+     */
+    private static void markChanged(Object owner)
+    {
+        if (owner instanceof TFCBlockEntity tfc)
+        {
+            tfc.markForSync();
+        }
+        else if (owner instanceof BlockEntity blockEntity)
         {
             blockEntity.setChanged();
         }
@@ -604,7 +688,7 @@ public final class CellarPreservationHelper
         return false;
     }
 
-    private record CellarInventoryWrapper(InventoryBlockEntity<?> owner, IItemHandler delegate) implements IItemHandler
+    private record CellarInventoryWrapper(BlockEntity owner, IItemHandler delegate) implements IItemHandler
     {
         @Override
         public int getSlots()
@@ -662,7 +746,7 @@ public final class CellarPreservationHelper
         }
     }
 
-    private record CellarInventoryModifiableWrapper(InventoryBlockEntity<?> owner, IItemHandlerModifiable delegate) implements IItemHandlerModifiable
+    private record CellarInventoryModifiableWrapper(BlockEntity owner, IItemHandlerModifiable delegate) implements IItemHandlerModifiable
     {
         @Override
         public int getSlots()

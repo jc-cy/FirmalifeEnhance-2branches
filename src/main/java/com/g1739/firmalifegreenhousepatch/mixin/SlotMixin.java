@@ -1,7 +1,7 @@
 package com.g1739.firmalifegreenhousepatch.mixin;
 
 import com.g1739.firmalifegreenhousepatch.common.temperature.CellarPreservationHelper;
-import net.dries007.tfc.common.blockentities.TFCChestBlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
@@ -27,9 +27,9 @@ public abstract class SlotMixin
     @Inject(method = "setChanged", at = @At("TAIL"), require = 0)
     private void flgp$syncChestCellarTraits(CallbackInfo ci)
     {
-        if (container instanceof TFCChestBlockEntity chest)
+        if (container instanceof ChestBlockEntity chest)
         {
-            CellarPreservationHelper.syncTFCChestBlockEntity(chest);
+            CellarPreservationHelper.syncChestBlockEntity(chest);
         }
         else
         {

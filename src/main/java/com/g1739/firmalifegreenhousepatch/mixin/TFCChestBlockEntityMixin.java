@@ -16,11 +16,11 @@ public abstract class TFCChestBlockEntityMixin
     @Inject(method = "createMenu", at = @At("HEAD"))
     private void flgp$syncCellarTraitsOnOpen(int id, Inventory inventory, CallbackInfoReturnable<AbstractContainerMenu> cir)
     {
-        CellarPreservationHelper.syncTFCChestBlockEntity((TFCChestBlockEntity) (Object) this);
+        CellarPreservationHelper.syncChestBlockEntity((TFCChestBlockEntity) (Object) this);
     }
 
     public void setAndUpdateSlots(int slot)
     {
-        CellarPreservationHelper.syncTFCChestBlockEntity((TFCChestBlockEntity) (Object) this);
+        CellarPreservationHelper.syncChestBlockEntity((TFCChestBlockEntity) (Object) this);
     }
 }
