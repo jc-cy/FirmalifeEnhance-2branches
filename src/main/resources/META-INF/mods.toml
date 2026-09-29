@@ -14,6 +14,8 @@ description = '''Firmalife 增强
 
 面向Firmalife 的增强补丁。
 
+一、功能概览
+
 本补丁主要强化了以下几个方向：
 
 • 温室内普通耕地恒温
@@ -118,7 +120,7 @@ description = '''Firmalife 增强
 四、地窖系统增强
 1. 气象站现在也能控制地窖温度和保鲜。地窖保鲜倍率改为动态计算
 
-当前规则如下：
+2. 保鲜倍率按实际地窖温度计算：
 
 • >= 0°C：2.5 倍保鲜
 • < 0°C：3 倍保鲜
@@ -170,6 +172,8 @@ Note: this mod is an early first-generation build with a simple feature set. It 
 If 群峦现代化生活 / TFCModernLife is installed, this mod must be disabled - the two cannot be enabled at the same time.
 
 An enhancement patch for Firmalife.
+
+I. Feature overview
 
 This patch mainly strengthens the following areas:
 
@@ -272,7 +276,7 @@ Greenhouse / cellar detection was enhanced: the default detection radius is twic
 IV. Cellar system enhancements
 1. The climate station can now also control cellar temperature and preservation. The cellar preservation multiplier is now calculated dynamically.
 
-Current rules:
+2. The preservation multiplier is calculated from the actual cellar temperature:
 
 • >= 0°C: 2.5x preservation
 • < 0°C: 3x preservation
@@ -318,8 +322,7 @@ Currently covered greenhouse parts include:
 Supported material tiers also cover many vanilla greenhouse variants, such as:
 
 • Treated wood / weathered treated wood / copper / oxidized copper / weathered copper / exposed copper / iron / rusted iron / stainless steel
-
-See the bundled LICENSE and DISCLAIMER (packed into the jar under META-INF) for the full terms.'''
+'''
 
 
 [[dependencies.firmalife_greenhouse_patch]]
